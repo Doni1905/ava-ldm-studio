@@ -259,7 +259,7 @@ function buildNormalized(intent: Intent, gloss: string, entities: LdmEntity[]): 
       return `Set an alarm for ${[t, day].filter(Boolean).join(" ") || "the morning"}.`;
     }
     case "make_call":
-      return `Call ${person ?? without(["call", "to", "a"]) || "the contact"}.`;
+      return `Call ${person || without(["call", "to", "a"]) || "the contact"}.`;
     case "send_message": {
       const body = without(["send", "message", "to", "a"]);
       const target = person ? ` to ${person}` : "";
@@ -272,9 +272,9 @@ function buildNormalized(intent: Intent, gloss: string, entities: LdmEntity[]): 
     case "check_weather":
       return `${titleCase(without([]))}?`;
     case "open_app":
-      return `Open ${app ?? without(["open", "the", "a"]) || "the app"}.`;
+      return `Open ${app || without(["open", "the", "a"]) || "the app"}.`;
     case "navigate":
-      return `Show me directions to ${place ?? without(["directions", "route", "to"]) || "the destination"}.`;
+      return `Show me directions to ${place || without(["directions", "route", "to"]) || "the destination"}.`;
     case "device_control": {
       const verb = words.find((w) => ["reduce", "increase", "turn off", "turn on"].includes(w));
       const compound = /turn off/.test(gloss) ? "Turn off" : /turn on/.test(gloss) ? "Turn on" : null;
@@ -345,7 +345,7 @@ export const ruleBasedLdm: LdmProcessor = {
     gloss = cleanup(
       gloss
         .split(/\s+/)
-        .map((t) => (t in WORDS ? WORDS[t] : t))
+        .map((t) => (t in WORDS ? (WORDS[t] ?? "") : t))
         .filter(Boolean),
     );
     trace.push(`gloss: ${gloss}`);
