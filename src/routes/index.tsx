@@ -78,7 +78,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 function LdmScreen() {
-  const [input, setInput] = useState(SAMPLE_UTTERANCES[0]);
+  const [input, setInput] = useState(SAMPLE_UTTERANCES[0] ?? "");
   const [analysis, setAnalysis] = useState<LdmAnalysis | null>(null);
   const [copied, setCopied] = useState(false);
   const [showDataset, setShowDataset] = useState(false);
@@ -174,7 +174,7 @@ function LdmScreen() {
                 </div>
                 <Field label="Normalized Text" value={analysis.normalizedText} />
                 <div className="grid grid-cols-2 gap-2">
-                  <Field label="Intent" value={INTENT_LABELS[analysis.intent]} />
+                  <Field label="Intent" value={INTENT_LABELS[analysis.intent] ?? analysis.intent} />
                   <Field
                     label="Confidence"
                     value={`${Math.round(analysis.confidence * 100)}%`}
@@ -273,7 +273,7 @@ function LdmScreen() {
                       <p className="text-xs text-foreground">{d.input}</p>
                       <p className="mt-1 text-[11px] text-muted-foreground">→ {d.normalized}</p>
                       <p className="mt-1 text-[10px] tracking-wide text-muted-foreground uppercase">
-                        {d.language} · {d.dialect} · {INTENT_LABELS[d.intent]}
+                        {d.language} · {d.dialect} · {INTENT_LABELS[d.intent] ?? d.intent}
                       </p>
                     </button>
                   </li>
