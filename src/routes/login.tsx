@@ -26,7 +26,7 @@ function LoginScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = (e: FormEvent) => {
     e.preventDefault();
     const s = signIn(email, password);
     if (!s) return setError("Invalid credentials. Use the demo login below.");
