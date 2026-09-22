@@ -1,319 +1,245 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { DATASET, INTENT_LABELS, SAMPLE_UTTERANCES } from "@/lib/ldm/dataset";
+import { useEffect, useRef, useState } from "react";
+import { SAMPLE_UTTERANCES, INTENT_LABELS } from "@/lib/ldm/dataset";
 import { ruleBasedLdm } from "@/lib/ldm/processor";
-import { runEvaluation } from "@/lib/ldm/evaluation";
 import { toHandoff, type LdmAnalysis } from "@/lib/ldm/types";
+import { AppShell } from "@/components/app-shell";
+import { useSpeech } from "@/hooks/use-speech";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "AVA — Linguistic Dialect Model (LDM)" },
+      { title: "AVA Assistant — Linguistic Dialect Model" },
       {
         name: "description",
         content:
-          "AVA's Linguistic Dialect Model: understands Tamil, Tanglish, dialect and slang, then normalizes meaning for the local LLM.",
+          "Speak or type Tamil, Tanglish or English. AVA's Linguistic Dialect Model normalizes meaning for the local LLM.",
       },
-      { property: "og:title", content: "AVA — Linguistic Dialect Model (LDM)" },
+      { property: "og:title", content: "AVA Assistant — Linguistic Dialect Model" },
       {
         property: "og:description",
         content:
-          "Analyze Tamil/Tanglish utterances, detect dialect and code-mixing, and hand normalized meaning to the local LLM.",
+          "Voice-first LDM playground: dialect, slang and code-mix detection with normalized meaning and intent.",
       },
     ],
   }),
-  component: LdmScreen,
+  component: AssistantScreen,
 });
 
-const PIPELINE = [
-  "ASR / Input",
-  "Language Detection",
-  "Dialect",
-  "Code-Mix",
-  "Normalization",
-  "Intent",
-  "LLM Handoff",
-];
-
-function Section({
-  title,
-  caption,
-  children,
-}: {
-  title: string;
-  caption?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-2xl border border-border bg-card p-4">
-      <div className="mb-3">
-        <h2 className="text-sm font-semibold tracking-wide text-foreground uppercase">{title}</h2>
-        {caption && <p className="mt-1 text-xs text-muted-foreground">{caption}</p>}
-      </div>
-      {children}
-    </section>
-  );
+interface Turn {
+  id: number;
+  input: string;
+  analysis: LdmAnalysis;
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Chip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-secondary px-3 py-2">
-      <p className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+    <div className="rounded-xl bg-background/60 px-2.5 py-1.5">
+      <p className="text-[9px] font-medium tracking-wider text-muted-foreground uppercase">
         {label}
       </p>
-      <p className="mt-0.5 text-sm leading-snug text-foreground">{value}</p>
+      <p className="mt-0.5 text-[12px] leading-snug text-foreground">{value}</p>
     </div>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-border bg-secondary px-3 py-3 text-center">
-      <p className="text-lg font-semibold text-foreground">{value}</p>
-      <p className="mt-1 text-[10px] leading-tight tracking-wide text-muted-foreground uppercase">
-        {label}
-      </p>
-    </div>
-  );
-}
-
-function LdmScreen() {
-  const [input, setInput] = useState(SAMPLE_UTTERANCES[0] ?? "");
-  const [analysis, setAnalysis] = useState<LdmAnalysis | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [showDataset, setShowDataset] = useState(false);
-
-  const evaluation = useMemo(() => runEvaluation(), []);
+function AssistantScreen() {
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [input, setInput] = useState("");
+  const [copied, setCopied] = useState<number | null>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+  const speech = useSpeech("ta-IN");
 
   const analyze = (text: string) => {
     const t = text.trim();
     if (!t) return;
-    setAnalysis(ruleBasedLdm.analyzeUtterance(t, { region: "Tamil Nadu", preferredLanguage: "ta" }));
-    setCopied(false);
+    const analysis = ruleBasedLdm.analyzeUtterance(t, {
+      region: "Tamil Nadu",
+      preferredLanguage: "ta",
+    });
+    setTurns((p) => [...p, { id: Date.now(), input: t, analysis }]);
+    setInput("");
   };
 
-  const handoff = analysis ? JSON.stringify(toHandoff(analysis), null, 2) : "";
-  const activeStage = analysis ? PIPELINE.length - 1 : 0;
+  // When voice recording ends with a transcript, analyze it automatically.
+  useEffect(() => {
+    if (!speech.listening && speech.transcript) {
+      const t = speech.transcript;
+      speech.setTranscript("");
+      analyze(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speech.listening, speech.transcript]);
 
-  const copy = async () => {
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [turns.length]);
+
+  const copy = async (turn: Turn) => {
     try {
-      await navigator.clipboard.writeText(handoff);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
+      await navigator.clipboard.writeText(JSON.stringify(toHandoff(turn.analysis), null, 2));
+      setCopied(turn.id);
+      setTimeout(() => setCopied(null), 1600);
     } catch {
-      setCopied(false);
+      setCopied(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-app-shell">
-      <div className="mx-auto min-h-screen w-full max-w-[430px] bg-background pb-10">
-        {/* App bar */}
-        <header className="sticky top-0 z-10 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
-              AVA
-            </div>
-            <div>
-              <h1 className="text-sm font-semibold text-foreground">Linguistic Dialect Model</h1>
-              <p className="text-[11px] text-muted-foreground">
-                Accentric Virtual Assistant · on-device module
+    <AppShell title="AVA Assistant" subtitle="LDM · on-device normalization">
+      {turns.length === 0 && (
+        <div className="pt-6 pb-4">
+          <h2 className="bg-gradient-to-r from-primary via-chart-2 to-chart-5 bg-clip-text text-2xl leading-snug font-semibold text-transparent">
+            Vanakkam.
+            <br />
+            Sollunga, naan purinjukiren.
+          </h2>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            Tap the mic and speak, or pick a demo utterance. The LDM only normalizes language — it
+            never performs actions.
+          </p>
+
+          <p className="mt-6 mb-2 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+            Demo utterances
+          </p>
+          <div className="space-y-2">
+            {SAMPLE_UTTERANCES.map((s) => (
+              <button
+                key={s}
+                onClick={() => analyze(s)}
+                className="w-full rounded-2xl border border-border bg-card px-3.5 py-3 text-left text-xs leading-snug text-foreground active:bg-accent"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {turns.map((turn) => (
+          <div key={turn.id} className="space-y-2">
+            <div className="flex justify-end">
+              <p className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-xs leading-snug text-primary-foreground">
+                {turn.input}
               </p>
+            </div>
+            <div className="rounded-2xl rounded-bl-md border border-border bg-card p-3">
+              <p className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+                Normalized meaning
+              </p>
+              <p className="mt-1 text-sm leading-snug text-foreground">
+                {turn.analysis.normalizedText}
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Chip label="Language" value={turn.analysis.language} />
+                <Chip label="Dialect" value={turn.analysis.dialect} />
+                <Chip label="Code-Mix" value={turn.analysis.codeMix} />
+                <Chip label="Style" value={turn.analysis.style} />
+                <Chip
+                  label="Intent"
+                  value={INTENT_LABELS[turn.analysis.intent] ?? turn.analysis.intent}
+                />
+                <Chip
+                  label="Confidence"
+                  value={`${Math.round(turn.analysis.confidence * 100)}%`}
+                />
+              </div>
+              {turn.analysis.entities.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {turn.analysis.entities.map((e) => (
+                    <span
+                      key={`${e.type}:${e.value}`}
+                      className="rounded-lg border border-border px-2 py-1 text-[11px] text-foreground"
+                    >
+                      <span className="text-muted-foreground">{e.type}:</span> {e.value}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <details className="mt-3">
+                <summary className="cursor-pointer text-[11px] text-muted-foreground">
+                  LLM handoff JSON · {turn.analysis.processingMs.toFixed(2)} ms
+                </summary>
+                <pre className="mt-2 max-h-56 overflow-auto rounded-xl bg-secondary p-3 text-[11px] leading-relaxed text-foreground">
+                  {JSON.stringify(toHandoff(turn.analysis), null, 2)}
+                </pre>
+                <button
+                  onClick={() => copy(turn)}
+                  className="mt-2 w-full rounded-xl border border-border bg-secondary py-2 text-[11px] font-semibold text-foreground active:bg-accent"
+                >
+                  {copied === turn.id ? "Copied" : "Copy JSON"}
+                </button>
+              </details>
             </div>
           </div>
-        </header>
-
-        <main className="space-y-4 px-4 pt-4">
-          {/* 1. Playground */}
-          <Section
-            title="LDM Playground"
-            caption="Speak or type Tamil, Tanglish or English. The LDM only normalizes meaning — it never performs actions."
-          >
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              rows={3}
-              placeholder="Dei nalaiku assignment submit panna remind pannu"
-              className="w-full resize-none rounded-xl border border-input bg-secondary px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/40 focus:outline-none"
-            />
-            <button
-              onClick={() => analyze(input)}
-              className="mt-3 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity active:opacity-80"
-            >
-              Analyze
-            </button>
-
-            <p className="mt-4 mb-2 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-              Sample utterances
-            </p>
-            <div className="space-y-2">
-              {SAMPLE_UTTERANCES.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    setInput(s);
-                    analyze(s);
-                  }}
-                  className="w-full rounded-xl border border-border bg-secondary px-3 py-2 text-left text-xs leading-snug text-secondary-foreground transition-colors active:bg-accent"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </Section>
-
-          {/* 2. Analysis */}
-          <Section title="Analysis" caption="Linguistic surface features and resolved meaning.">
-            {analysis ? (
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <Field label="Language" value={analysis.language} />
-                  <Field label="Dialect" value={analysis.dialect} />
-                  <Field label="Code-Mix" value={analysis.codeMix} />
-                  <Field label="Style" value={analysis.style} />
-                </div>
-                <Field label="Normalized Text" value={analysis.normalizedText} />
-                <div className="grid grid-cols-2 gap-2">
-                  <Field label="Intent" value={INTENT_LABELS[analysis.intent] ?? analysis.intent} />
-                  <Field
-                    label="Confidence"
-                    value={`${Math.round(analysis.confidence * 100)}%`}
-                  />
-                </div>
-                <div className="rounded-xl bg-secondary px-3 py-2">
-                  <p className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-                    Entities
-                  </p>
-                  {analysis.entities.length ? (
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {analysis.entities.map((e) => (
-                        <span
-                          key={`${e.type}:${e.value}`}
-                          className="rounded-lg border border-border px-2 py-1 text-[11px] text-foreground"
-                        >
-                          <span className="text-muted-foreground">{e.type}:</span> {e.value}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-sm text-muted-foreground">None detected</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Run Analyze to see language, dialect, code-mix and normalized meaning.
-              </p>
-            )}
-          </Section>
-
-          {/* 3. Pipeline */}
-          <Section title="Pipeline" caption="Where the LDM sits between ASR and the local LLM.">
-            <ol className="space-y-1.5">
-              {PIPELINE.map((stage, i) => {
-                const done = analysis !== null && i <= activeStage;
-                return (
-                  <li key={stage} className="flex items-center gap-2.5">
-                    <span
-                      className={`flex size-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold ${
-                        done
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-secondary text-muted-foreground"
-                      }`}
-                    >
-                      {i + 1}
-                    </span>
-                    <span
-                      className={`text-xs ${done ? "text-foreground" : "text-muted-foreground"}`}
-                    >
-                      {stage}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
-          </Section>
-
-          {/* 4. LLM Handoff */}
-          <Section title="LLM Handoff" caption="Structured payload passed to the local LLM.">
-            <pre className="max-h-64 overflow-auto rounded-xl bg-secondary p-3 text-[11px] leading-relaxed text-foreground">
-              {handoff || "// Analyze an utterance to generate the handoff payload"}
-            </pre>
-            <button
-              onClick={copy}
-              disabled={!handoff}
-              className="mt-3 w-full rounded-xl border border-border bg-secondary py-2.5 text-xs font-semibold text-foreground transition-colors active:bg-accent disabled:opacity-50"
-            >
-              {copied ? "Copied" : "Copy JSON"}
-            </button>
-          </Section>
-
-          {/* 5. Dataset */}
-          <Section
-            title="Synthetic Dataset"
-            caption={`${DATASET.length} local utterances · ${evaluation.intentCount} intents · Tamil, Tanglish, English, slang, code-mixing`}
-          >
-            <button
-              onClick={() => setShowDataset((v) => !v)}
-              className="w-full rounded-xl border border-border bg-secondary py-2.5 text-xs font-semibold text-foreground active:bg-accent"
-            >
-              {showDataset ? "Hide samples" : "View samples"}
-            </button>
-            {showDataset && (
-              <ul className="mt-3 space-y-2">
-                {DATASET.map((d) => (
-                  <li key={d.id} className="rounded-xl border border-border px-3 py-2">
-                    <button
-                      onClick={() => {
-                        setInput(d.input);
-                        analyze(d.input);
-                      }}
-                      className="w-full text-left"
-                    >
-                      <p className="text-xs text-foreground">{d.input}</p>
-                      <p className="mt-1 text-[11px] text-muted-foreground">→ {d.normalized}</p>
-                      <p className="mt-1 text-[10px] tracking-wide text-muted-foreground uppercase">
-                        {d.language} · {d.dialect} · {INTENT_LABELS[d.intent] ?? d.intent}
-                      </p>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Section>
-
-          {/* 6. Evaluation */}
-          <Section
-            title="Synthetic Prototype Evaluation"
-            caption="Indicative only — measured on the synthetic dataset with the rule-based LDM. Not a trained-model benchmark."
-          >
-            <div className="grid grid-cols-2 gap-2">
-              <Metric
-                label="Normalization Accuracy"
-                value={`${Math.round(evaluation.normalizationAccuracy * 100)}%`}
-              />
-              <Metric
-                label="Intent Accuracy"
-                value={`${Math.round(evaluation.intentAccuracy * 100)}%`}
-              />
-              <Metric
-                label="Dialect / Code-Mix Detection"
-                value={`${Math.round(evaluation.dialectCodeMixAccuracy * 100)}%`}
-              />
-              <Metric
-                label="Avg Processing Time"
-                value={`${evaluation.avgProcessingMs.toFixed(2)} ms`}
-              />
-            </div>
-          </Section>
-
-          <p className="px-1 text-center text-[10px] leading-relaxed text-muted-foreground">
-            Flow: Voice / ASR → LDM → Normalized meaning → Local LLM → Agent → Device actions.
-            <br />
-            The LDM normalizes language only; it does not execute actions or chat.
-          </p>
-        </main>
+        ))}
+        <div ref={endRef} />
       </div>
-    </div>
+
+      {/* Composer */}
+      <div className="fixed bottom-16 left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 px-4 pb-2">
+        {(speech.listening || speech.error) && (
+          <p className="mb-2 text-center text-[11px] text-muted-foreground">
+            {speech.listening
+              ? speech.transcript || "Listening… speak now"
+              : speech.error}
+          </p>
+        )}
+        <div className="flex items-end gap-2 rounded-3xl border border-border bg-card p-2 shadow-lg">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                analyze(input);
+              }
+            }}
+            rows={1}
+            placeholder="Ask AVA in Tamil, Tanglish or English…"
+            className="max-h-24 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+          />
+          <button
+            onClick={() => (speech.listening ? speech.stop() : speech.start())}
+            aria-label={speech.listening ? "Stop recording" : "Start recording"}
+            className={`flex size-11 shrink-0 items-center justify-center rounded-full transition-all ${
+              speech.listening
+                ? "animate-pulse bg-destructive text-destructive-foreground"
+                : "bg-gradient-to-br from-primary to-chart-5 text-primary-foreground"
+            }`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="size-5">
+              <path
+                d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"
+                fill="currentColor"
+              />
+              <path
+                d="M5 11a7 7 0 0 0 14 0M12 18v3"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          <button
+            onClick={() => analyze(input)}
+            disabled={!input.trim()}
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground disabled:opacity-40"
+            aria-label="Analyze"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="size-5">
+              <path
+                d="M5 12h13m0 0-5-5m5 5-5 5"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </AppShell>
   );
 }
