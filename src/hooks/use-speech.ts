@@ -1,24 +1,36 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type Rec = {
+export interface SpeechResultEvent {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+}
+export interface SpeechErrorEvent {
+  error?: string;
+}
+export type SpeechConstructor = new () => Rec;
+export type SpeechWindow = Window & {
+  SpeechRecognition?: SpeechConstructor;
+  webkitSpeechRecognition?: SpeechConstructor;
+  webkitAudioContext?: typeof AudioContext;
+};
+export type Rec = {
   start: () => void;
   stop: () => void;
   abort: () => void;
   lang: string;
   continuous: boolean;
   interimResults: boolean;
-  onresult: ((e: any) => void) | null;
-  onerror: ((e: any) => void) | null;
+  onresult: ((e: SpeechResultEvent) => void) | null;
+  onerror: ((e: SpeechErrorEvent) => void) | null;
   onend: (() => void) | null;
 };
 
-function getCtor(): any {
+function getCtor(): SpeechConstructor | null {
   if (typeof window === "undefined") return null;
-  const w = window as any;
+  const w = window as SpeechWindow;
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-/** Live browser speech-to-text for the LDM playground (on-device, no cloud). */
+/** Browser speech-to-text may use vendor cloud services; not an offline ASR guarantee. */
 export function useSpeech(lang = "ta-IN") {
   const recRef = useRef<Rec | null>(null);
   const [listening, setListening] = useState(false);
@@ -43,12 +55,12 @@ export function useSpeech(lang = "ta-IN") {
     rec.lang = lang;
     rec.continuous = false;
     rec.interimResults = true;
-    rec.onresult = (e: any) => {
+    rec.onresult = (e: SpeechResultEvent) => {
       let text = "";
-      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+      for (let i = 0; i < e.results.length; i++) text += e.results[i]?.[0]?.transcript ?? "";
       setTranscript(text.trim());
     };
-    rec.onerror = (e: any) => {
+    rec.onerror = (e: SpeechErrorEvent) => {
       setError(
         e?.error === "not-allowed"
           ? "Microphone permission denied."
