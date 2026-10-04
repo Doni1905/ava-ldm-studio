@@ -64,3 +64,7 @@ logs/*.log.*
 # HF token cache (handled by huggingface_hub, not project files)
 .huggingface/
 
+
+dist-android/
+android/.kotlin/
+android/app/src/main/assets/

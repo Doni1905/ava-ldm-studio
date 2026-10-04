@@ -1,3 +1,30 @@
+## Android v1.0.1: audited website bundled as an APK
+
+This release loads the actual fixed website from local Android assets using WebViewAssetLoader. It is not the old separate Compose UI. Text analysis, the 30-item synthetic dataset and browser evaluation work without a server. Desktop audio requires a separately running Python API. No microphone ASR, trained acoustic model, local LLM or device-action execution is bundled in the APK.
+
+**Installation:** v1.0.1 uses a new signing certificate. Uninstall v1.0.0 first; uninstalling removes its local app data. Android 8 or newer is required.
+
+**Build:** Node 22.12+, JDK 17 and Android SDK 35 are required.
+
+```sh
+npm ci
+npm run typecheck
+npm run lint
+npm run build:android
+mkdir -p android/app/src/main/assets
+cp -r dist-android/* android/app/src/main/assets/
+cd android
+sh gradlew testDebugUnitTest assembleRelease
+```
+
+The release APK is signed separately. Signing material is not part of this repository. Old Compose screens are retained under `android/app/src/legacy` for reference and are not compiled. APK UI checks used the actual bundled website at desktop, 390px and 320px sizes; physical-device behavior remains unverified unless stated separately in the release notes.
+
+**Fixed in this audit:** negation no longer becomes a positive action; a small explicit Tamil-script dictionary handles supported phrases and preserves unsupported text; failed audio analysis no longer reports results from stale text; stale upload selection is cleared when text changes; recording resources and object URLs are cleaned up; clipboard failure is reported; fake corpus/ASR/LLM metrics were removed; the benchmark runs the current browser engine and labels itself an in-sample test; mobile bottom content has navigation safe space and tables scroll rather than crush columns.
+
+Rule scores are heuristics, not probabilities. Synthetic examples informed the rules, so even 100% intent agreement is not held-out accuracy. The original research goals below are historical, not evidence of implemented capabilities.
+
+---
+
 ## Fork fixes and verified setup (October 4, 2026)
 
 This fork is https://github.com/Doni1905/ava-ldm-studio. The Python API is **aiohttp**, not FastAPI; `/docs` is not implemented. Use Python **3.11** and Node **22.12+**. The virtual environment is not included in Git.

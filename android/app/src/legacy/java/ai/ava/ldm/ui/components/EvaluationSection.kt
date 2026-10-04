@@ -60,7 +60,7 @@ fun EvaluationSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Assessment,
@@ -70,7 +70,7 @@ fun EvaluationSection(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Synthetic Prototype Evaluation",
+                        text = "Synthetic evaluation",
                         color = TextPrimary,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold
@@ -121,7 +121,7 @@ fun EvaluationSection(
                 modifier = Modifier.weight(1f),
                 title = "NORMALIZATION",
                 value = String.format(Locale.US, "%.1f%%", metrics.normalizationAccuracy),
-                subtitle = "Semantic preservation",
+                subtitle = "Exact text match",
                 color = MintSuccess
             )
             MetricCard(
@@ -205,7 +205,7 @@ fun EvaluationSection(
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(
-            text = "Note: Evaluated on synthetic prototype benchmark test suite. Real speech Whisper ASR + Wav2Vec2 evaluations are documented in project results/evaluation_report.md.",
+            text = "In-sample text smoke test, not held-out accuracy. No ASR, acoustic classifier or LLM is measured.",
             color = TextMuted,
             fontSize = 11.sp,
             lineHeight = 15.sp

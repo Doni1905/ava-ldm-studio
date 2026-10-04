@@ -154,7 +154,7 @@ fun AnalysisSection(
                 text = if (analysis.normalizedText.isNotEmpty()) {
                     analysis.normalizedText
                 } else {
-                    "No speech analyzed yet."
+                    "No text analyzed yet."
                 },
                 color = TextPrimary,
                 fontSize = 15.sp,

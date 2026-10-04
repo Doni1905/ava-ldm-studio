@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -77,9 +79,9 @@ fun LdmStudioScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
 
     val tabs = listOf(
-        NavTab("Playground", Icons.Default.Terminal),
+        NavTab("Play", Icons.Default.Terminal),
         NavTab("Dataset", Icons.Default.Dataset),
-        NavTab("Evaluation", Icons.Default.Assessment)
+        NavTab("Evaluate", Icons.Default.Assessment)
     )
 
     Column(
@@ -87,6 +89,8 @@ fun LdmStudioScreen(
             .fillMaxSize()
             .background(BgDark)
             .statusBarsPadding()
+            .navigationBarsPadding()
+            .imePadding()
     ) {
         // App Top Bar Header
         Column(
@@ -118,7 +122,7 @@ fun LdmStudioScreen(
 
                     Spacer(modifier = Modifier.width(10.dp))
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "AVA LDM Studio",
                             color = TextPrimary,
@@ -128,7 +132,7 @@ fun LdmStudioScreen(
                         Text(
                             text = "Linguistic Dialect Model for Tamil & Tanglish",
                             color = TextSecondary,
-                            fontSize = 11.sp
+                            fontSize = 10.sp
                         )
                     }
                 }

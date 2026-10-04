@@ -1,6 +1,6 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { signOut, useSession } from "@/lib/auth";
+import { useSession } from "@/lib/auth";
 import { Activity, Database, BarChart3, GitFork, Mic } from "lucide-react";
 
 const NAV = [
@@ -20,10 +20,13 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { session, ready } = useSession();
-  const navigate = useNavigate();
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
 
   useEffect(() => {
+    if (navigator.userAgent.includes("AVA-LDM-Android")) {
+      setApiOnline(false);
+      return;
+    }
     // Check if Python API server is running on port 8000
     fetch("http://127.0.0.1:8000/health", { mode: "cors" })
       .then((res) => (res.ok ? setApiOnline(true) : setApiOnline(false)))
@@ -107,10 +110,10 @@ export function AppShell({
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 py-6">{children}</main>
+        <main className="min-w-0 flex-1 pt-6 pb-28 sm:pb-6">{children}</main>
 
         {/* Mobile Navigation */}
-        <nav className="fixed bottom-0 left-0 z-30 w-full border-t border-slate-800 bg-slate-950/95 px-2 py-2 backdrop-blur-xl sm:hidden">
+        <nav className="fixed bottom-0 left-0 z-30 w-full border-t border-slate-800 bg-slate-950/95 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:hidden">
           <div className="grid grid-cols-4 gap-1">
             {NAV.map((n) => {
               const Icon = n.icon;

@@ -21,14 +21,23 @@ export const Route = createFileRoute("/pipeline")({
 });
 
 const STAGES = [
-  { name: "Voice / ASR", note: "Microphone captures Tamil, Tanglish or English speech." },
+  {
+    name: "Voice / ASR",
+    note: "Desktop only: microphone uses browser speech services or a separately running Python API. APK accepts text only.",
+  },
   { name: "Language Detection", note: "Identifies Tamil, romanised Tamil, English or mixed." },
   { name: "Dialect", note: "Chennai, Madurai, Kongu, Nellai, standard Tamil." },
   { name: "Code-Mix", note: "Measures Tamil-English mixing and slang density." },
   { name: "Normalization", note: "Rewrites slang and informal phrasing into clean meaning." },
   { name: "Intent + Entities", note: "Resolves intent and extracts time, person, app, place." },
-  { name: "LLM Handoff", note: "Structured JSON payload sent to the on-device LLM." },
-  { name: "Agent / Actions", note: "Outside the LDM: the agent performs device actions." },
+  {
+    name: "LLM Handoff",
+    note: "Structured JSON is prepared for copying. No LLM is bundled or called.",
+  },
+  {
+    name: "Agent / Actions",
+    note: "Future integration only. This app performs no device actions.",
+  },
 ];
 
 function PipelinePage() {

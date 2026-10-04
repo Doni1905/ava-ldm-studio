@@ -22,6 +22,20 @@ class LdmProcessorTest {
     }
 
     @Test
+    fun testNegationNeverProducesAnAction() {
+        listOf("Do not call mother", "Amma ku call pannathe", "அம்மாவுக்கு அழைக்காதே").forEach {
+            assertEquals("UNKNOWN", processor.analyzeUtterance(it).intent)
+            assertEquals(it, processor.analyzeUtterance(it).normalizedText)
+        }
+    }
+
+    @Test
+    fun testTamilScriptAndUnknownPreservation() {
+        assertEquals("MAKE_CALL", processor.analyzeUtterance("அம்மாவுக்கு அழை").intent)
+        assertEquals("UNKNOWN", processor.analyzeUtterance("அறியாத தமிழ் சொற்றொடர்").intent)
+    }
+
+    @Test
     fun testChennaiSlangNormalizationAndIntent() {
         val input = "Dei nalaiku assignment submit panna remind pannu"
         val analysis = processor.analyzeUtterance(input)

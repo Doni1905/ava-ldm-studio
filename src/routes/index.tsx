@@ -124,6 +124,8 @@ function encodeWAV(samples: Float32Array, sampleRate: number): Blob {
 }
 
 export function LDMStudioPlayground() {
+  const isAndroid =
+    typeof navigator !== "undefined" && navigator.userAgent.includes("AVA-LDM-Android");
   const [textInput, setTextInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -140,16 +142,37 @@ export function LDMStudioPlayground() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const pcmChunksRef = useRef<Float32Array[]>([]);
+  const recordedTranscriptRef = useRef("");
   const recognitionRef = useRef<Rec | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check API health on load
   useEffect(() => {
+    if (isAndroid) {
+      setApiConnected(false);
+      return;
+    }
     fetch("http://127.0.0.1:8000/health")
       .then((res) => setApiConnected(res.ok))
       .catch(() => setApiConnected(false));
   }, []);
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      recognitionRef.current?.abort();
+      audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+      void audioContextRef.current?.close();
+    },
+    [],
+  );
+  useEffect(
+    () => () => {
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+    },
+    [audioUrl],
+  );
 
   // Set default initial demo output
   useEffect(() => {
@@ -162,6 +185,9 @@ export function LDMStudioPlayground() {
   const startRecording = async () => {
     setErrorMessage(null);
     setLiveTranscript("");
+    recordedTranscriptRef.current = "";
+    setTextInput("");
+    setSelectedFile(null);
     pcmChunksRef.current = [];
 
     try {
@@ -197,10 +223,11 @@ export function LDMStudioPlayground() {
           recognition.onresult = (event: SpeechResultEvent) => {
             let transcriptText = "";
             for (let i = 0; i < event.results.length; i++) {
-              transcriptText += event.results[i]?.[0]?.transcript ?? "" + " ";
+              transcriptText += (event.results[i]?.[0]?.transcript ?? "") + " ";
             }
             const clean = transcriptText.trim();
             if (clean) {
+              recordedTranscriptRef.current = clean;
               setLiveTranscript(clean);
               setTextInput(clean);
             }
@@ -245,6 +272,7 @@ export function LDMStudioPlayground() {
       recognitionRef.current = null;
     }
 
+    const sampleRate = audioContextRef.current?.sampleRate ?? 16000;
     // Stop AudioContext
     if (audioContextRef.current) {
       try {
@@ -269,7 +297,7 @@ export function LDMStudioPlayground() {
         offset += chunk.length;
       }
 
-      const wavBlob = encodeWAV(mergedSamples, 16000);
+      const wavBlob = encodeWAV(mergedSamples, sampleRate);
       const url = URL.createObjectURL(wavBlob);
       setAudioUrl(url);
       const recordedFile = new File([wavBlob], `voice_${Date.now()}.wav`, {
@@ -279,7 +307,7 @@ export function LDMStudioPlayground() {
 
       // Auto-trigger analysis
       setTimeout(() => {
-        const spoken = textInput.trim() || liveTranscript.trim();
+        const spoken = recordedTranscriptRef.current.trim();
         if (spoken) {
           handleAnalyzeText(spoken);
         } else {
@@ -294,6 +322,11 @@ export function LDMStudioPlayground() {
   // -------------------------------------------------------------------------
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (file && (!file.name.toLowerCase().endsWith(".wav") || file.size > 25 * 1024 * 1024)) {
+      setErrorMessage("Choose a WAV file smaller than 25 MB.");
+      e.target.value = "";
+      return;
+    }
     if (file) {
       setSelectedFile(file);
       setAudioUrl(URL.createObjectURL(file));
@@ -345,54 +378,20 @@ export function LDMStudioPlayground() {
         normalized_text: data.normalized_text,
         intent: data.intent,
         entities: formatEntities(data.entities),
-        confidence: data.confidence || { language: 0.95, dialect: 0.9, intent: 0.95 },
+        confidence: data.confidence || {},
         latency_ms: data.latency_ms || { total: Math.round(performance.now() - t0) },
         model_info: {
           asr: "OpenAI Whisper (whisper-tiny / local CPU)",
-          dialect: "wav2vec2-base + MLP Classifier",
+          dialect: "Lexical rules unless a trained checkpoint is configured",
           normalizer: "AVA Rule-based LDM Engine v1.0",
           llm: "AVA Local LLM Adapter",
         },
       });
     } catch (err: unknown) {
-      // Fallback: If local API server had an issue, use speech recognition or entered text
-      const transcriptToUse = textInput.trim() || liveTranscript.trim();
-      if (!transcriptToUse) {
-        setErrorMessage(
-          "Audio recorded. Please type the transcript above or speak clearly so speech recognition can transcribe your words.",
-        );
-        setIsProcessing(false);
-        return;
-      }
-      const localRes = ruleBasedLdm.analyzeUtterance(transcriptToUse, {
-        region: "Tamil Nadu",
-      });
-
-      setAnalysis({
-        transcript: transcriptToUse,
-        language: localRes.language,
-        dialect: localRes.dialect,
-        code_mixed: !localRes.codeMix.startsWith("None"),
-        normalized_text: localRes.normalizedText,
-        intent: localRes.intent.toUpperCase(),
-        entities: formatEntities(localRes.entities),
-        confidence: {
-          language: 0.94,
-          dialect: localRes.confidence,
-          intent: localRes.confidence,
-        },
-        latency_ms: {
-          asr: 0,
-          ldm: Number(localRes.processingMs.toFixed(2)),
-          total: Number(localRes.processingMs.toFixed(2)),
-        },
-        model_info: {
-          asr: "Audio file loaded (Offline Mode)",
-          dialect: "Lexical & Phonetic Rule Classifier",
-          normalizer: "In-Browser Linguistic Normalizer",
-          llm: "Local LLM Handoff Contract",
-        },
-      });
+      setAnalysis(null);
+      setErrorMessage(
+        `Audio was not analyzed: ${err instanceof Error ? err.message : String(err)}. Start the local Python API, or remove the audio and enter its transcript. No audio result has been inferred from old text.`,
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -402,9 +401,11 @@ export function LDMStudioPlayground() {
     setIsProcessing(true);
     setErrorMessage(null);
     setTextInput(text);
+    setSelectedFile(null);
     const t0 = performance.now();
 
     try {
+      if (isAndroid) throw new Error("Use bundled browser rules");
       const res = await fetch("http://127.0.0.1:8000/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -422,11 +423,11 @@ export function LDMStudioPlayground() {
         normalized_text: data.normalized_text,
         intent: data.intent,
         entities: formatEntities(data.entities),
-        confidence: data.confidence || { language: 0.95, dialect: 0.9, intent: 0.95 },
+        confidence: data.confidence || {},
         latency_ms: data.latency_ms || { total: Math.round(performance.now() - t0) },
         model_info: {
           asr: "Direct Text Input (ASR Bypassed)",
-          dialect: "wav2vec2-base / Lexical Evidence Head",
+          dialect: "Transcript lexical rules (not acoustic inference)",
           normalizer: "AVA Rule-based LDM Engine v1.0",
           llm: "AVA Local LLM Adapter",
         },
@@ -440,13 +441,13 @@ export function LDMStudioPlayground() {
       setAnalysis({
         transcript: text,
         language: localRes.language,
-        dialect: forcedDialect || localRes.dialect,
+        dialect: localRes.dialect,
         code_mixed: !localRes.codeMix.startsWith("None"),
         normalized_text: localRes.normalizedText,
         intent: localRes.intent.toUpperCase(),
         entities: formatEntities(localRes.entities),
         confidence: {
-          language: 0.95,
+          language: localRes.confidence,
           dialect: localRes.confidence,
           intent: localRes.confidence,
         },
@@ -465,7 +466,7 @@ export function LDMStudioPlayground() {
     }
   };
 
-  const copyHandoffJSON = () => {
+  const copyHandoffJSON = async () => {
     if (!analysis) return;
     const handoff = {
       transcript: analysis.transcript,
@@ -478,8 +479,12 @@ export function LDMStudioPlayground() {
       confidence: analysis.confidence,
       latency_ms: analysis.latency_ms,
     };
-    navigator.clipboard.writeText(JSON.stringify(handoff, null, 2));
-    setCopiedHandoff(true);
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(handoff, null, 2));
+      setCopiedHandoff(true);
+    } catch {
+      setErrorMessage("Copy failed. Select and copy the JSON below manually.");
+    }
     setTimeout(() => setCopiedHandoff(false), 2000);
   };
 
@@ -495,6 +500,12 @@ export function LDMStudioPlayground() {
         <div className="space-y-5 lg:col-span-5">
           {/* Audio Acquisition Panel */}
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 shadow-sm backdrop-blur">
+            {isAndroid && (
+              <p className="mb-3 text-xs text-amber-300">
+                Standalone APK: text analysis works offline. Audio recording/upload requires the
+                desktop Python service and is not included.
+              </p>
+            )}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold tracking-wider text-slate-300 uppercase">
@@ -528,6 +539,7 @@ export function LDMStudioPlayground() {
               <div className="flex items-center gap-3">
                 {!isRecording ? (
                   <button
+                    disabled={isAndroid}
                     onClick={startRecording}
                     className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-sky-500/25 transition-all hover:bg-sky-400 active:scale-95"
                   >
@@ -548,11 +560,12 @@ export function LDMStudioPlayground() {
                 <input
                   type="file"
                   ref={fileInputRef}
-                  accept="audio/*,.wav,.mp3,.m4a"
+                  accept="audio/wav,.wav"
                   onChange={handleFileChange}
                   className="hidden"
                 />
                 <button
+                  disabled={isAndroid}
                   onClick={() => fileInputRef.current?.click()}
                   className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-800/80 px-3.5 py-2.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
                 >
@@ -581,6 +594,16 @@ export function LDMStudioPlayground() {
                     <p className="truncate text-xs font-medium text-slate-300">
                       {selectedFile?.name || "Recorded Audio"}
                     </p>
+                    <button
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setAudioUrl(null);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                      }}
+                      className="text-xs text-sky-400"
+                    >
+                      Remove audio
+                    </button>
                     <audio src={audioUrl} controls className="mt-1 h-7 w-full" />
                   </div>
                 </div>
@@ -594,7 +617,10 @@ export function LDMStudioPlayground() {
               </label>
               <textarea
                 value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
+                onChange={(e) => {
+                  setTextInput(e.target.value);
+                  setSelectedFile(null);
+                }}
                 placeholder="Type Tamil, Tanglish, or dialect speech (e.g. Dei nalaiku assignment submit panna remind pannu)..."
                 rows={3}
                 className="mt-1.5 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 focus:outline-none"
@@ -693,11 +719,13 @@ export function LDMStudioPlayground() {
             <div className="mt-3 space-y-2 text-[11px]">
               <div className="flex justify-between">
                 <span className="text-slate-500">ASR Acoustic Model:</span>
-                <span className="font-mono text-slate-300">OpenAI Whisper (tiny/local)</span>
+                <span className="font-mono text-slate-300">Desktop Python Whisper only</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Dialect Classifier:</span>
-                <span className="font-mono text-slate-300">wav2vec2-base + 5-Class MLP</span>
+                <span className="font-mono text-slate-300">
+                  Lexical marker rules; no trained model bundled
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">LDM Engine:</span>
@@ -705,7 +733,9 @@ export function LDMStudioPlayground() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Target Integration:</span>
-                <span className="font-mono text-slate-300">Native Android Kotlin (AVA)</span>
+                <span className="font-mono text-slate-300">
+                  Android WebView with bundled website
+                </span>
               </div>
             </div>
           </div>
@@ -819,7 +849,7 @@ export function LDMStudioPlayground() {
                 {/* Confidence Scores */}
                 <div className="mt-4 border-t border-slate-800 pt-3">
                   <span className="text-[10px] font-medium tracking-wider text-slate-500 uppercase">
-                    Confidence Scores:
+                    Rule scores (not calibrated probabilities):
                   </span>
                   <div className="mt-2 grid grid-cols-3 gap-3">
                     {Object.entries(analysis.confidence).map(([k, score]) => (

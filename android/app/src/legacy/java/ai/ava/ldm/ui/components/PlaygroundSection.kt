@@ -74,7 +74,7 @@ fun PlaygroundSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "LDM Playground",
                     color = TextPrimary,
@@ -82,7 +82,7 @@ fun PlaygroundSection(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Enter raw Tamil/Tanglish speech or choose a sample",
+                    text = "Type Tamil/Tanglish text or choose a sample",
                     color = TextSecondary,
                     fontSize = 12.sp
                 )

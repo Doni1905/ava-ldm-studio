@@ -9,6 +9,8 @@ export default tseslint.config(
   {
     ignores: [
       "dist",
+      "dist-android",
+      "android/app/src/main/assets",
       ".output",
       ".vinxi",
       ".venv",

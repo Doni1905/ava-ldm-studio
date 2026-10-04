@@ -109,6 +109,25 @@ const DIALECT_MARKERS: [string[], string][] = [
   [["pa", "ppa", "ille"], "Nellai"],
 ];
 
+const TAMIL_PHRASES: [string, string][] = [
+  ["அழைக்காதே", "do not call"],
+  ["அழைக்க வேண்டாம்", "do not call"],
+  ["அழை", "call"],
+  ["அம்மாவுக்கு", "mother"],
+  ["அம்மா", "mother"],
+  ["அப்பாவுக்கு", "father"],
+  ["அப்பா", "father"],
+  ["நாளைக்கு", "tomorrow"],
+  ["நாளை", "tomorrow"],
+  ["இன்று", "today"],
+  ["அலாரம்", "alarm"],
+  ["வை", "set"],
+  ["வாட்ஸ்அப்", "whatsapp"],
+  ["திற", "open"],
+];
+const NEGATION =
+  /\b(not|never|dont|don't|vendam|vendaam|pannathe|pannadha|pannadhe|pannaathe|koodathu)\b|வேண்டாம்|அழைக்காதே|செய்யாதே/i;
+
 const TAMIL_SCRIPT = /[\u0B80-\u0BFF]/;
 
 /* ------------------------------------------------------------------ */
@@ -126,6 +145,11 @@ function tokenize(text: string): string[] {
 const ENGLISH_HINTS = new Set([
   "remind",
   "me",
+  "mother",
+  "father",
+  "not",
+  "do",
+  "never",
   "to",
   "the",
   "set",
@@ -311,8 +335,21 @@ export const ruleBasedLdm: LdmProcessor = {
     const raw = input.trim();
     const trace: string[] = [];
 
-    const tokens = tokenize(raw);
-    const localCount = tokens.filter(isLocalToken).length;
+    const translated = TAMIL_PHRASES.reduce(
+      (text, [ta, en]) => text.replaceAll(ta, ` ${en} `),
+      raw,
+    );
+    const tokens = tokenize(translated);
+    const localCount = tokens.filter(
+      (t) =>
+        !ENGLISH_HINTS.has(t) &&
+        (t in WORDS ||
+          PHRASES.some(([re]) => {
+            re.lastIndex = 0;
+            return re.test(t);
+          }) ||
+          /^(pannu|pannunga|panna|vai|kudu|anuppu|iruku|varuma|maniku|ku|kku)$/.test(t)),
+    ).length;
     const englishCount = tokens.length - localCount;
     const hasTamilScript = TAMIL_SCRIPT.test(raw);
     const localRatio = tokens.length ? localCount / tokens.length : 0;
@@ -360,17 +397,27 @@ export const ruleBasedLdm: LdmProcessor = {
     );
     trace.push(`gloss: ${gloss}`);
 
-    const { intent, strength } = detectIntent(gloss);
+    const negative = NEGATION.test(raw);
+    const unsupportedTamil = TAMIL_SCRIPT.test(translated);
+    const detected = detectIntent(gloss);
+    const intent: Intent = negative || unsupportedTamil || !raw ? "unknown" : detected.intent;
+    const strength = intent === "unknown" ? 0 : detected.strength;
     const entities = extractEntities(gloss, raw);
-    const normalizedText = buildNormalized(intent, gloss, entities);
+    const normalizedText =
+      negative || unsupportedTamil ? raw : raw ? buildNormalized(intent, gloss, entities) : "";
+    if (negative) trace.push("Negation preserved; action intent withheld.");
+    if (unsupportedTamil) trace.push("Unsupported Tamil words preserved; no translation claimed.");
     trace.push(`intent: ${intent} · entities: ${entities.length}`);
 
     const unknownTokens = gloss.split(" ").filter((t) => isLocalToken(t)).length;
     const coverage = gloss ? 1 - unknownTokens / Math.max(gloss.split(" ").length, 1) : 0;
-    const confidence = Math.max(
-      0.35,
-      Math.min(0.98, strength * 0.7 + coverage * 0.3 + (entities.length ? 0.03 : 0)),
-    );
+    const confidence =
+      intent === "unknown"
+        ? 0
+        : Math.max(
+            0.35,
+            Math.min(0.98, strength * 0.7 + coverage * 0.3 + (entities.length ? 0.03 : 0)),
+          );
 
     const end = typeof performance !== "undefined" ? performance.now() : Date.now();
 

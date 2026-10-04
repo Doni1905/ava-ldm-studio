@@ -114,24 +114,12 @@ object EvaluationEngine {
     }
 
     private fun isSemanticMatch(predicted: String, expected: String): Boolean {
-        val p = clean(predicted)
-        val e = clean(expected)
-        if (p == e) return true
-
-        // Token Jaccard similarity threshold for minor grammatical variations
-        val pTokens = p.split(" ").filter { it.isNotEmpty() }.toSet()
-        val eTokens = e.split(" ").filter { it.isNotEmpty() }.toSet()
-        if (eTokens.isEmpty()) return pTokens.isEmpty()
-
-        val intersection = pTokens.intersect(eTokens).size
-        val union = pTokens.union(eTokens).size
-        val jaccard = intersection.toDouble() / union.toDouble()
-        return jaccard >= 0.65
+        return clean(predicted) == clean(expected)
     }
 
     private fun clean(text: String): String {
         return text.lowercase()
-            .replace(Regex("[^a-z0-9\\s]"), "")
+            .replace(Regex("[^\\p{L}\\p{N}\\s]"), "")
             .replace(Regex("\\s+"), " ")
             .trim()
     }

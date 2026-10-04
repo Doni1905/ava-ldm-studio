@@ -102,8 +102,33 @@ class RuleBasedLdmProcessor : LdmProcessor {
             else -> "Standard"
         }
 
+        // Negation must never become a positive action handoff.
+        val negated = Regex("(?i)\\b(not|never|dont|don't|vendam|vendaam|pannathe|pannadha|pannadhe|pannaathe|koodathu)\\b|வேண்டாம்|அழைக்காதே|செய்யாதே").containsMatchIn(text)
+        if (negated) return LdmAnalysis(
+            transcript = text, language = language, dialect = detectedDialect,
+            codeMixed = codeMixed, style = style, normalizedText = text,
+            intent = "UNKNOWN", confidence = ConfidenceScores(0f, 0f, 0f, 0f),
+            processingTimeMs = (System.nanoTime() - t0) / 1_000_000.0,
+            pipelineStep = "Negation preserved; action intent withheld"
+        )
+
         // 4. Linguistic Normalization & Slang Mapping
+        val tamilGlosses = listOf(
+            "அம்மாவுக்கு" to "mother", "அம்மா" to "mother", "அப்பாவுக்கு" to "father",
+            "அப்பா" to "father", "அழை" to "call", "நாளைக்கு" to "tomorrow", "நாளை" to "tomorrow",
+            "இன்று" to "today", "அலாரம்" to "alarm", "வை" to "set", "வாட்ஸ்அப்" to "whatsapp", "திற" to "open"
+        )
         var normalized = text
+        if (isTamilScript) {
+            tamilGlosses.forEach { (ta, en) -> normalized = normalized.replace(ta, " $en ") }
+            if (normalized.any { it in '\u0B80'..'\u0BFF' }) return LdmAnalysis(
+                transcript = text, language = language, dialect = detectedDialect,
+                codeMixed = codeMixed, style = style, normalizedText = text, intent = "UNKNOWN",
+                confidence = ConfidenceScores(0f, 0f, 0f, 0f),
+                processingTimeMs = (System.nanoTime() - t0) / 1_000_000.0,
+                pipelineStep = "Unsupported Tamil words preserved"
+            )
+        }
 
         // Drop colloquial fillers
         val fillers = listOf("dei", "machi", "bruh", "vaada", "da", "la", "ayya", "pa", "nu", "ondru", "konjam")
@@ -188,7 +213,7 @@ class RuleBasedLdmProcessor : LdmProcessor {
             normLower.contains("volume") || normLower.contains("brightness") || normLower.contains("wifi") -> "DEVICE_SETTING"
             normLower.contains("search") || normLower.contains("population") || normLower.contains("traffic") -> "SEARCH_INFO"
             normLower.contains("how are you") || normLower.contains("vanakkam") || normLower.contains("hello") -> "SMALL_TALK"
-            else -> "GENERAL_QUERY"
+            else -> "UNKNOWN"
         }
 
         // 6. Entity Extraction
@@ -241,10 +266,10 @@ class RuleBasedLdmProcessor : LdmProcessor {
             intent = intent,
             entities = entities,
             confidence = ConfidenceScores(
-                language = 0.95f,
-                dialect = if (detectedDialect != "Standard") 0.92f else 0.85f,
-                intent = 0.94f,
-                overall = 0.92f
+                language = if (intent == "UNKNOWN") 0f else 0.7f,
+                dialect = if (detectedDialect != "Standard") 0.7f else 0.4f,
+                intent = if (intent == "UNKNOWN") 0f else 0.7f,
+                overall = if (intent == "UNKNOWN") 0f else 0.7f
             ),
             processingTimeMs = elapsedMs,
             pipelineStep = "ASR → Lang → Dialect → Norm → Intent → LLM Ready"
