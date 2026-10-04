@@ -71,7 +71,9 @@ export function AppShell({
                       key={n.to}
                       to={n.to}
                       className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-900 hover:text-white"
-                      activeProps={{ className: "bg-slate-900 text-sky-400 border border-slate-800" }}
+                      activeProps={{
+                        className: "bg-slate-900 text-sky-400 border border-slate-800",
+                      }}
                       activeOptions={{ exact: n.to === "/" }}
                     >
                       <Icon className="size-3.5" />
@@ -88,16 +90,16 @@ export function AppShell({
                     apiOnline === true
                       ? "bg-emerald-500 shadow-sm shadow-emerald-500/50"
                       : apiOnline === false
-                      ? "bg-amber-500"
-                      : "bg-slate-500"
+                        ? "bg-amber-500"
+                        : "bg-slate-500"
                   }`}
                 />
                 <span className="text-slate-300">
                   {apiOnline === true
                     ? "API: 8000"
                     : apiOnline === false
-                    ? "Local Engine"
-                    : "Connecting..."}
+                      ? "Local Engine"
+                      : "Connecting..."}
                 </span>
               </div>
             </div>
@@ -130,4 +132,4 @@ export function AppShell({
       </div>
     </div>
   );
-}
+                      }
