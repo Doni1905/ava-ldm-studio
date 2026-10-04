@@ -1,3 +1,4 @@
+import type { Rec, SpeechWindow, SpeechResultEvent, SpeechErrorEvent } from "@/hooks/use-speech";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { SAMPLE_UTTERANCES, INTENT_LABELS, DATASET } from "@/lib/ldm/dataset";
@@ -58,13 +59,13 @@ interface AnalysisState {
   };
 }
 
-function formatEntities(entities: any): Record<string, string> {
+function formatEntities(entities: unknown): Record<string, string> {
   if (!entities) return {};
   if (Array.isArray(entities)) {
     const map: Record<string, string> = {};
-    entities.forEach((e: any) => {
+    entities.forEach((e: unknown) => {
       if (e && typeof e === "object" && "type" in e && "value" in e) {
-        map[e.type] = String(e.value);
+        map[String(e.type)] = String(e.value);
       } else if (e && typeof e === "object") {
         Object.entries(e).forEach(([k, v]) => {
           map[k] = typeof v === "object" ? JSON.stringify(v) : String(v);
@@ -77,7 +78,7 @@ function formatEntities(entities: any): Record<string, string> {
     const map: Record<string, string> = {};
     Object.entries(entities).forEach(([k, v]) => {
       if (v && typeof v === "object" && "type" in v && "value" in v) {
-        map[(v as any).type || k] = String((v as any).value);
+        map[String(v.type) || k] = String(v.value);
       } else if (typeof v === "object") {
         map[k] = JSON.stringify(v);
       } else {
@@ -115,7 +116,7 @@ function encodeWAV(samples: Float32Array, sampleRate: number): Blob {
 
   let offset = 44;
   for (let i = 0; i < samples.length; i++, offset += 2) {
-    const s = Math.max(-1, Math.min(1, samples[i]));
+    const s = Math.max(-1, Math.min(1, samples[i] ?? 0));
     view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
   }
 
@@ -139,7 +140,7 @@ export function LDMStudioPlayground() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const pcmChunksRef = useRef<Float32Array[]>([]);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<Rec | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -168,7 +169,7 @@ export function LDMStudioPlayground() {
       audioStreamRef.current = stream;
 
       // 1. AudioContext for true 16kHz WAV encoding
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass = window.AudioContext || (window as SpeechWindow).webkitAudioContext;
       const audioCtx = new AudioContextClass({ sampleRate: 16000 });
       audioContextRef.current = audioCtx;
       const source = audioCtx.createMediaStreamSource(stream);
@@ -183,7 +184,9 @@ export function LDMStudioPlayground() {
       processor.connect(audioCtx.destination);
 
       // 2. Web Speech Recognition (live Tanglish / Tamil transcription)
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition =
+        (window as SpeechWindow).SpeechRecognition ||
+        (window as SpeechWindow).webkitSpeechRecognition;
       if (SpeechRecognition) {
         try {
           const recognition = new SpeechRecognition();
@@ -191,10 +194,10 @@ export function LDMStudioPlayground() {
           recognition.interimResults = true;
           recognition.lang = speechLang;
 
-          recognition.onresult = (event: any) => {
+          recognition.onresult = (event: SpeechResultEvent) => {
             let transcriptText = "";
             for (let i = 0; i < event.results.length; i++) {
-              transcriptText += event.results[i][0].transcript + " ";
+              transcriptText += event.results[i]?.[0]?.transcript ?? "" + " ";
             }
             const clean = transcriptText.trim();
             if (clean) {
@@ -203,7 +206,7 @@ export function LDMStudioPlayground() {
             }
           };
 
-          recognition.onerror = (e: any) => {
+          recognition.onerror = (e: SpeechErrorEvent) => {
             console.warn("Speech recognition notice:", e.error);
           };
 
@@ -220,8 +223,10 @@ export function LDMStudioPlayground() {
       timerRef.current = setInterval(() => {
         setRecordDuration((prev) => prev + 1);
       }, 1000);
-    } catch (err: any) {
-      setErrorMessage(`Microphone access error: ${err.message}. Please allow mic access in your browser.`);
+    } catch (err: unknown) {
+      setErrorMessage(
+        `Microphone access error: ${err instanceof Error ? err.message : String(err)}. Please allow mic access in your browser.`,
+      );
     }
   };
 
@@ -234,7 +239,9 @@ export function LDMStudioPlayground() {
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
-      } catch {}
+      } catch {
+        /* Resource already stopped. */
+      }
       recognitionRef.current = null;
     }
 
@@ -242,7 +249,9 @@ export function LDMStudioPlayground() {
     if (audioContextRef.current) {
       try {
         audioContextRef.current.close();
-      } catch {}
+      } catch {
+        /* Resource already stopped. */
+      }
       audioContextRef.current = null;
     }
     if (audioStreamRef.current) {
@@ -345,11 +354,13 @@ export function LDMStudioPlayground() {
           llm: "AVA Local LLM Adapter",
         },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Fallback: If local API server had an issue, use speech recognition or entered text
       const transcriptToUse = textInput.trim() || liveTranscript.trim();
       if (!transcriptToUse) {
-        setErrorMessage("Audio recorded. Please type the transcript above or speak clearly so speech recognition can transcribe your words.");
+        setErrorMessage(
+          "Audio recorded. Please type the transcript above or speak clearly so speech recognition can transcribe your words.",
+        );
         setIsProcessing(false);
         return;
       }
@@ -361,8 +372,8 @@ export function LDMStudioPlayground() {
         transcript: transcriptToUse,
         language: localRes.language,
         dialect: localRes.dialect,
-        code_mixed: localRes.codeMix,
-        normalized_text: localRes.normalizedMeaning,
+        code_mixed: !localRes.codeMix.startsWith("None"),
+        normalized_text: localRes.normalizedText,
         intent: localRes.intent.toUpperCase(),
         entities: formatEntities(localRes.entities),
         confidence: {
@@ -371,9 +382,9 @@ export function LDMStudioPlayground() {
           intent: localRes.confidence,
         },
         latency_ms: {
-          asr: 12.5,
+          asr: 0,
           ldm: Number(localRes.processingMs.toFixed(2)),
-          total: Number((12.5 + localRes.processingMs).toFixed(2)),
+          total: Number(localRes.processingMs.toFixed(2)),
         },
         model_info: {
           asr: "Audio file loaded (Offline Mode)",
@@ -430,8 +441,8 @@ export function LDMStudioPlayground() {
         transcript: text,
         language: localRes.language,
         dialect: forcedDialect || localRes.dialect,
-        code_mixed: localRes.codeMix,
-        normalized_text: localRes.normalizedMeaning,
+        code_mixed: !localRes.codeMix.startsWith("None"),
+        normalized_text: localRes.normalizedText,
         intent: localRes.intent.toUpperCase(),
         entities: formatEntities(localRes.entities),
         confidence: {
@@ -440,9 +451,6 @@ export function LDMStudioPlayground() {
           intent: localRes.confidence,
         },
         latency_ms: {
-          linguistic: 0.12,
-          normalization: 0.18,
-          intent: 0.15,
           total: Number(localRes.processingMs.toFixed(2)),
         },
         model_info: {
@@ -558,7 +566,9 @@ export function LDMStudioPlayground() {
                 <div className="flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
                   <div className="size-2 rounded-full bg-rose-500 animate-ping" />
                   <span className="font-medium">
-                    {liveTranscript ? `Recognized: "${liveTranscript}"` : "Listening... Speak your Tamil / Tanglish sentence now!"}
+                    {liveTranscript
+                      ? `Recognized: "${liveTranscript}"`
+                      : "Listening... Speak your Tamil / Tanglish sentence now!"}
                   </span>
                 </div>
               )}
@@ -629,13 +639,37 @@ export function LDMStudioPlayground() {
 
             <div className="mt-3 flex flex-wrap gap-1.5">
               {[
-                { label: "Chennai Tanglish", text: "Dei nalaiku assignment submit panna remind pannu", dial: "Chennai" },
-                { label: "Chennai Slang", text: "Machi inniku evening gym poga remind pannu", dial: "Chennai" },
-                { label: "Madurai Dialect", text: "Thambi ku oru message anuppu naan late ah varen nu", dial: "Madurai" },
-                { label: "Kongu Regional", text: "Ayya nalaiku medicine saapida remind pannunga", dial: "Kongu" },
+                {
+                  label: "Chennai Tanglish",
+                  text: "Dei nalaiku assignment submit panna remind pannu",
+                  dial: "Chennai",
+                },
+                {
+                  label: "Chennai Slang",
+                  text: "Machi inniku evening gym poga remind pannu",
+                  dial: "Chennai",
+                },
+                {
+                  label: "Madurai Dialect",
+                  text: "Thambi ku oru message anuppu naan late ah varen nu",
+                  dial: "Madurai",
+                },
+                {
+                  label: "Kongu Regional",
+                  text: "Ayya nalaiku medicine saapida remind pannunga",
+                  dial: "Kongu",
+                },
                 { label: "Nellai Regional", text: "Friend ku call pottu kudu pa", dial: "Nellai" },
-                { label: "Standard Tamil", text: "Naalaikku kaalaila 6 maniku alarm vai", dial: "Standard" },
-                { label: "English Benchmark", text: "Remind me to pay the electricity bill tomorrow", dial: "Standard" },
+                {
+                  label: "Standard Tamil",
+                  text: "Naalaikku kaalaila 6 maniku alarm vai",
+                  dial: "Standard",
+                },
+                {
+                  label: "English Benchmark",
+                  text: "Remind me to pay the electricity bill tomorrow",
+                  dial: "Standard",
+                },
               ].map((item, idx) => (
                 <button
                   key={idx}
@@ -710,9 +744,7 @@ export function LDMStudioPlayground() {
                     <p className="text-[10px] font-medium tracking-wider text-slate-500 uppercase">
                       Dialect
                     </p>
-                    <p className="mt-0.5 text-xs font-semibold text-sky-400">
-                      {analysis.dialect}
-                    </p>
+                    <p className="mt-0.5 text-xs font-semibold text-sky-400">{analysis.dialect}</p>
                   </div>
                   <div className="rounded-xl border border-slate-800 bg-slate-950 p-2.5">
                     <p className="text-[10px] font-medium tracking-wider text-slate-500 uppercase">
@@ -738,9 +770,7 @@ export function LDMStudioPlayground() {
                     <span className="text-[10px] font-medium tracking-wider text-slate-500 uppercase">
                       Raw ASR Transcript:
                     </span>
-                    <p className="mt-1 font-mono text-xs text-slate-300">
-                      "{analysis.transcript}"
-                    </p>
+                    <p className="mt-1 font-mono text-xs text-slate-300">"{analysis.transcript}"</p>
                   </div>
 
                   <div className="flex items-center justify-center">
@@ -773,11 +803,15 @@ export function LDMStudioPlayground() {
                           className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1 text-xs"
                         >
                           <span className="text-slate-500">{key}:</span>
-                          <span className="font-semibold text-sky-400">"{typeof val === 'object' ? JSON.stringify(val) : String(val)}"</span>
+                          <span className="font-semibold text-sky-400">
+                            "{typeof val === "object" ? JSON.stringify(val) : String(val)}"
+                          </span>
                         </div>
                       ))
                     ) : (
-                      <span className="text-xs text-slate-500 italic">No specific named entities detected</span>
+                      <span className="text-xs text-slate-500 italic">
+                        No specific named entities detected
+                      </span>
                     )}
                   </div>
                 </div>
@@ -799,7 +833,9 @@ export function LDMStudioPlayground() {
                         <div className="h-1.5 overflow-hidden rounded-full bg-slate-800">
                           <div
                             className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-400"
-                            style={{ width: `${score ? Math.min(100, Math.round(score * 100)) : 90}%` }}
+                            style={{
+                              width: `${score ? Math.min(100, Math.round(score * 100)) : 90}%`,
+                            }}
                           />
                         </div>
                       </div>
@@ -817,9 +853,14 @@ export function LDMStudioPlayground() {
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-4">
                     {Object.entries(analysis.latency_ms).map(([stage, ms]) => (
-                      <div key={stage} className="rounded-lg border border-slate-800/80 bg-slate-950/60 p-2">
+                      <div
+                        key={stage}
+                        className="rounded-lg border border-slate-800/80 bg-slate-950/60 p-2"
+                      >
                         <p className="text-[9px] text-slate-500 uppercase">{stage}</p>
-                        <p className="mt-0.5 font-mono font-medium text-slate-200">{ms.toFixed(1)} ms</p>
+                        <p className="mt-0.5 font-mono font-medium text-slate-200">
+                          {ms.toFixed(1)} ms
+                        </p>
                       </div>
                     ))}
                   </div>
