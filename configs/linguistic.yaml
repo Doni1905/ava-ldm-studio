@@ -1,0 +1,37 @@
+# ============================================================
+# configs/linguistic.yaml
+# AVA LDM Studio — Language & Code-Mix Detection Configuration
+# ============================================================
+
+detection:
+  # Script-level classification thresholds
+  # A text is classified as "Tamil" if tamil_ratio >= this value
+  tamil_dominant_threshold: 0.70
+  # A text is classified as "English" if english_ratio >= this value
+  # AND tanglish_score < tanglish_detection_threshold
+  english_dominant_threshold: 0.70
+  # If tanglish_score >= this value, ASCII text is treated as Tanglish, not English
+  tanglish_detection_threshold: 0.35
+
+  # Code-mix thresholds
+  # A text is "code-mixed" if the minority language contributes >= this fraction
+  code_mix_minority_threshold: 0.20
+
+  # Confidence scoring weights (must sum to 1.0)
+  # Script-based confidence is given higher weight than heuristic-based
+  script_confidence_weight: 0.70
+  heuristic_confidence_weight: 0.30
+
+tanglish:
+  # Minimum number of Tanglish indicator words required for detection
+  min_tanglish_words: 1
+  # Score multiplier for Tamil-grammar affixes (very strong indicators)
+  affix_weight: 2.0
+  # Score multiplier for core Tanglish vocabulary hits
+  vocab_weight: 1.0
+
+tokenization:
+  # Token separators for word-level analysis
+  # Split on whitespace + common punctuation (preserve Tamil grammar markers)
+  split_pattern: "\\s+"
+  min_token_length: 1

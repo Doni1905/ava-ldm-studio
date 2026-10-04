@@ -1,0 +1,4 @@
+system,name,normalization_exact_match,normalization_token_f1,normalization_bleu1,semantic_preservation_rate,intent_accuracy,entity_f1,task_success_rate
+Baseline A (ASR -> LLM),Baseline A (ASR -> Local LLM),0.0667,0.3736,0.3315,0.6579,0.7333,0.7213,0.1667
+System B (Generic LDM -> LLM),System B (ASR -> Generic LDM -> Local LLM),0.0667,0.8521,0.7593,0.9737,0.7667,0.7541,0.5333
+System C (Dialect-Aware LDM -> LLM),System C (ASR -> Dialect-aware LDM -> Local LLM),0.0667,0.8504,0.7558,0.9737,0.7667,0.7541,0.5333

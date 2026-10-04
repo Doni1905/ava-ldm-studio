@@ -1,0 +1,145 @@
+# ============================================================
+# configs/dialect.yaml
+# AVA LDM Studio — Tamil Dialect Classification Configuration
+# ============================================================
+#
+# IMPORTANT: Relationship between district, area, and dialect
+# -----------------------------------------------------------
+# The IndicVoices-R dataset includes a `district` field (a Tamil Nadu
+# administrative district, e.g. "Chennai", "Coimbatore", "Madurai") and
+# an `area` field ("Urban" | "Rural"). These are NOT dialect labels.
+#
+# Tamil dialects are sociolinguistic varieties that span multiple districts.
+# The mapping below provides a principled approximation grounded in
+# linguistic geography and the existing UI design (src/lib/ldm/processor.ts),
+# which already defined 4 operational dialect regions:
+#
+#   - Chennai     (Madras Bashai): Chennai, Tiruvallur, Kanchipuram, Chengalpattu
+#   - Madurai     (South-Central): Madurai, Virudhunagar, Sivaganga, Theni, Dindigul
+#   - Kongu       (Western):       Coimbatore, Erode, Tiruppur, Salem, Namakkal, Dharmapuri
+#   - Nellai      (Deep South):    Tirunelveli, Thoothukudi, Tenkasi, Kanyakumari
+#
+# All other districts default to "Standard" until sufficient data exists to
+# support a finer classification. This mapping is explicitly configurable
+# below and must be revisited when actual dialect-annotated training data
+# is available.
+#
+# When to update: if you acquire dialect-annotated training data that uses
+# different label sets, update `labels.names` and `district_to_dialect` here,
+# and retrain the classifier. Do not hard-code labels in Python source files.
+# ============================================================
+
+labels:
+  # The operational dialect label set for this project.
+  # Must match the keys in district_to_dialect.default_label.
+  names:
+    - "Chennai"    # Madras Bashai / North-East coastal
+    - "Madurai"    # Central / South-Central
+    - "Kongu"      # Western (Coimbatore / Salem belt)
+    - "Nellai"     # Deep South (Tirunelveli belt)
+    - "Standard"   # All other districts / insufficient data
+
+  # Integer index ↔ label mapping (auto-derived from names order above)
+  default_label: "Standard"
+
+  # --- District → Dialect mapping ---
+  # Source: Annamalai (2011), Schiffman (1998), and the prototype
+  # dialect markers already defined in src/lib/ldm/processor.ts.
+  district_to_dialect:
+    # Chennai region
+    Chennai:         "Chennai"
+    Tiruvallur:      "Chennai"
+    Kanchipuram:     "Chennai"
+    Chengalpattu:    "Chennai"
+    Ranipet:         "Chennai"
+    Vellore:         "Chennai"
+    # Madurai region
+    Madurai:         "Madurai"
+    Virudhunagar:    "Madurai"
+    Sivaganga:       "Madurai"
+    Theni:           "Madurai"
+    Dindigul:        "Madurai"
+    Ramanathapuram:  "Madurai"
+    # Kongu (Western) region
+    Coimbatore:      "Kongu"
+    Erode:           "Kongu"
+    Tiruppur:        "Kongu"
+    Salem:           "Kongu"
+    Namakkal:        "Kongu"
+    Dharmapuri:      "Kongu"
+    Krishnagiri:     "Kongu"
+    # Nellai (Deep South) region
+    Tirunelveli:     "Nellai"
+    Thoothukudi:     "Nellai"
+    Tenkasi:         "Nellai"
+    Kanyakumari:     "Nellai"
+    # All others default to Standard
+    Thanjavur:       "Standard"
+    Tiruchirappalli: "Standard"
+    Pudukkottai:     "Standard"
+    Nagapattinam:    "Standard"
+    Tiruvarur:       "Standard"
+    Cuddalore:       "Standard"
+    Villupuram:      "Standard"
+    Kallakurichi:    "Standard"
+    Perambalur:      "Standard"
+    Ariyalur:        "Standard"
+    Karur:           "Standard"
+    Tirupattur:      "Standard"
+    Nilgiris:        "Standard"
+
+model:
+  # HuggingFace model ID used for audio feature extraction.
+  # facebook/wav2vec2-base is a 95M-param model well-suited for
+  # feature extraction without fine-tuning on dialect classification.
+  # The top classifier head is trained locally on our 5k subset.
+  feature_extractor_id: "facebook/wav2vec2-base"
+  target_sample_rate: 16000
+
+  # Classifier head architecture
+  head:
+    type: "mlp"          # "mlp" | "linear"
+    hidden_dims: [256, 128]
+    dropout: 0.3
+    activation: "relu"
+
+  # Checkpoint paths
+  checkpoint_dir: "models/dialect"
+  best_checkpoint: "models/dialect/best_model.pt"
+
+training:
+  batch_size: 8
+  max_epochs: 30
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  patience: 5             # Early stopping patience (epochs)
+  warmup_steps: 50
+  device: "auto"          # "cuda" | "cpu" | "auto"
+  seed: 42
+
+  # Data loading
+  num_workers: 0          # 0 = main process (safest on Windows)
+  pin_memory: false
+
+  # Max audio length fed to wav2vec2 (samples at 16kHz)
+  max_audio_length: 80000  # 5 seconds
+
+evaluation:
+  batch_size: 16
+  metrics:
+    - accuracy
+    - macro_f1
+    - per_class_f1
+    - confusion_matrix
+
+inference:
+  device: "auto"
+  batch_size: 8
+  top_k: 2               # Return top-k predictions with probabilities
+
+paths:
+  train_manifest:    "data/manifests/train.csv"
+  val_manifest:      "data/manifests/validation.csv"
+  test_manifest:     "data/manifests/test.csv"
+  results_dir:       "results/dialect"
+  log_file:          "logs/dialect.log"

@@ -1,0 +1,135 @@
+intents:
+  CREATE_REMINDER:
+    patterns:
+      - "\\bremind\\b"
+      - "\\balarm\\b"
+      - "\\btimer\\b"
+    required_entities: []
+    optional_entities: ["task", "date", "time"]
+  
+  MAKE_CALL:
+    patterns:
+      - "\\bcall\\b"
+      - "\\bphone\\b"
+      - "\\bdial\\b"
+    required_entities: []
+    optional_entities: ["person"]
+
+  SEND_MESSAGE:
+    patterns:
+      - "\\bsend message\\b"
+      - "\\bmessage\\s+\\w+\\b"
+      - "\\btext\\b"
+    required_entities: []
+    optional_entities: ["person", "message_content"]
+
+  CHECK_MESSAGES:
+    patterns:
+      - "\\bcheck\\s+message"
+      - "\\bread\\s+message"
+    required_entities: []
+    optional_entities: ["app", "person"]
+
+  CHECK_EMAIL:
+    patterns:
+      - "\\bcheck\\s+email"
+      - "\\bread\\s+email"
+      - "\\binbox\\b"
+    required_entities: []
+    optional_entities: []
+
+  SUMMARIZE_MESSAGES:
+    patterns:
+      - "\\bsummarize\\b"
+      - "\\bsummary\\b"
+    required_entities: []
+    optional_entities: ["app", "person"]
+
+  CHECK_CALENDAR:
+    patterns:
+      - "\\bcalendar\\b"
+      - "\\bschedule\\b(?!\\s+meeting)"
+      - "\\bagenda\\b"
+    required_entities: []
+    optional_entities: ["date"]
+
+  CREATE_CALENDAR_EVENT:
+    patterns:
+      - "\\bcreate\\s+event\\b"
+      - "\\bschedule\\s+meeting\\b"
+      - "\\badd\\s+to\\s+calendar\\b"
+    required_entities: []
+    optional_entities: ["task", "date", "time"]
+
+  SEARCH_FILE:
+    patterns:
+      - "\\bsearch\\s+file\\b"
+      - "\\bfind\\s+file\\b"
+      - "\\bdocument\\b"
+    required_entities: []
+    optional_entities: ["query"]
+
+  OPEN_APP:
+    patterns:
+      - "\\bopen\\b"
+      - "\\blaunch\\b"
+    required_entities: []
+    optional_entities: ["app"]
+
+  DEVICE_SETTING:
+    patterns:
+      - "\\bvolume\\b"
+      - "\\bbrightness\\b"
+      - "\\bwifi\\b"
+      - "\\bbluetooth\\b"
+      - "\\bturn\\s+(?:on|off)\\b"
+    required_entities: []
+    optional_entities: ["device_setting", "action", "value"]
+
+  GENERAL_QUERY:
+    patterns:
+      - "\\bsearch\\b(?!\\s+file)"
+      - "\\bhow\\s+(?:is|much)\\b"
+      - "\\bweather\\b"
+      - "\\bdirections\\b"
+      - "\\broute\\b"
+      - "\\bpopulation\\b"
+      - "\\btraffic\\b"
+    required_entities: []
+    optional_entities: ["query"]
+
+entity_extraction:
+  # Base patterns for entities in normalized text
+  date:
+    - "\\btomorrow\\b"
+    - "\\btoday\\b"
+    - "\\byesterday\\b"
+    - "\\btonight\\b"
+  time:
+    - "\\b\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)\\b"
+    - "\\bmorning\\b"
+    - "\\bevening\\b"
+    - "\\bafternoon\\b"
+  app:
+    - "\\bwhatsapp\\b"
+    - "\\binstagram\\b"
+    - "\\bfacebook\\b"
+    - "\\byoutube\\b"
+    - "\\bspotify\\b"
+  person:
+    - "\\bmother\\b"
+    - "\\bfather\\b"
+    - "\\bbrother\\b"
+    - "\\bsister\\b"
+    - "\\bfriend\\b"
+  device_setting:
+    - "\\bvolume\\b"
+    - "\\bbrightness\\b"
+    - "\\bwifi\\b"
+    - "\\bbluetooth\\b"
+  action:
+    - "\\bturn\\s+on\\b"
+    - "\\bturn\\s+off\\b"
+    - "\\breduce\\b"
+    - "\\bincrease\\b"
+    - "\\bdecrease\\b"

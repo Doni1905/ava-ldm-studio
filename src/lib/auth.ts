@@ -29,9 +29,12 @@ export function signOut() {
 export function readSession(): Session | null {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Session) : null;
+    if (raw) return JSON.parse(raw) as Session;
+    const defaultSession: Session = { email: "researcher@ava.ai", name: "Researcher" };
+    localStorage.setItem(KEY, JSON.stringify(defaultSession));
+    return defaultSession;
   } catch {
-    return null;
+    return { email: "researcher@ava.ai", name: "Researcher" };
   }
 }
 

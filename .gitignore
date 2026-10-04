@@ -30,3 +30,37 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ──────────────────────────────────────────────────────────
+# Python / AVA LDM data pipeline
+# ──────────────────────────────────────────────────────────
+
+# Virtual environment
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Parquet shard cache (large files — metadata only, no audio)
+data/cache/shards/*.parquet
+data/cache/metadata/*.parquet
+
+# Checkpoint (regenerated on each run)
+data/cache/metadata/checkpoint.json
+
+# Manifest CSVs — KEEP in git (they're small and useful for review)
+# data/manifests/*.csv  ← intentionally NOT gitignored
+
+# Log files
+logs/*.log
+logs/*.log.*
+
+# HF token cache (handled by huggingface_hub, not project files)
+.huggingface/
+

@@ -1,0 +1,226 @@
+# ============================================================
+# configs/ldm.yaml
+# AVA LDM Studio — Linguistic Normalization Configuration
+# ============================================================
+#
+# The normalizer is a deterministic, rule-based pipeline.
+# No generative model is used. All transformations are
+# explicitly listed and auditable.
+#
+# Pipeline order:
+#   1. Detect language / code-mix (M5 module)
+#   2. Extract semantic anchors (entities, time, negation)
+#   3. Apply phrase-level Tanglish → English substitutions
+#   4. Apply token-level slang / filler mapping
+#   5. Apply dialect-specific form adaptation
+#   6. Reconstruct normalized output
+#   7. Verify semantic preservation (entities present in output)
+# ============================================================
+
+normalizer:
+  # Languages this normalizer handles
+  supported_languages:
+    - "ta"         # Tamil script
+    - "en"         # English
+    - "ta-en"      # Tamil-English code-mix
+    - "tanglish"   # Romanized Tamil
+
+  # If true, raise a warning when an entity extracted in step 2
+  # is absent from the normalized output.
+  strict_entity_preservation: true
+
+  # If true, capitalize the first letter of the output sentence.
+  capitalize_output: true
+
+  # Sentence terminator appended if output has no final punctuation.
+  sentence_terminator: "."
+
+  # Unknown tokens (not in slang/phrase maps) are passed through as-is.
+  # Set to true to drop unknown Tamil tokens instead.
+  drop_unknown_tamil_tokens: false
+
+slang:
+  # Discourse fillers — dropped completely (map to empty string).
+  # Adapted from src/lib/ldm/processor.ts WORDS dict.
+  fillers:
+    - dei
+    - da
+    - la
+    - pa
+    - ppa
+    - machi
+    - bruh
+    - ayya
+    - thala
+    - nu
+    - anna
+    - ku
+    - kku
+    - vendum
+    - yov
+    - ille
+    - vaada
+    - scene
+
+  # Slang glosses — map to English equivalents.
+  # Value: English gloss.  Empty string: drop.
+  glosses:
+    oru:       "a"
+    onnu:      "a"
+    ondru:     "a"
+    konjam:    "a little"
+    romba:     "very"
+    bayangara: "very"
+    sikkiram:  "quickly"
+    semma:     "great"
+    nalla:     "good"
+    naalaikku: "tomorrow"
+    nalaiku:   "tomorrow"
+    naalaiku:  "tomorrow"
+    inniku:    "today"
+    innaiku:   "today"
+    ipo:       "now"
+    ippo:      "now"
+    raathiri:  "tonight"
+    amma:      "mother"
+    appa:      "father"
+    thambi:    "my brother"
+    akka:      "my sister"
+    paatu:     "song"
+    padal:     "song"
+    podu:      "play"
+    vanakkam:  "hello"
+    sollu:     "tell me"
+    sollunga:  "tell me"
+    evlo:      "how much"
+    enna:      "what"
+    naan:      "I"
+    ava:       "AVA"
+    please:    "please"
+    aama:      "yes"
+    illai:     "no"
+    illya:     "no"
+    illa:      "no"
+    vera:      "different"
+    vera_vidu: "let it be"
+
+dialect:
+  # Dialect-specific filler words that should be removed during normalization.
+  # This is separate from the general slang list since these are dialect markers.
+  chennai_fillers:
+    - dei
+    - machi
+    - da
+    - bruh
+    - vaada
+  madurai_fillers:
+    - thambi     # as filler usage (possessive form handled separately)
+    - aama
+    - ennanga
+  kongu_fillers:
+    - ayya
+    - yov
+    - la
+  nellai_fillers:
+    - pa
+    - ppa
+    - ille
+
+semantic:
+  # Named entity categories to extract and preserve
+  entity_types:
+    - time
+    - date
+    - person
+    - location
+    - app
+    - quantity
+    - task
+    - device_setting
+    - negation
+
+  # Negation markers in Tamil/Tanglish
+  negation_markers:
+    - illai
+    - illya
+    - illa
+    - matteen
+    - matten
+    - no
+    - not
+    - never
+    - "don't"
+    - dont
+    - "won't"
+    - wont
+
+  # Time-of-day words to preserve
+  time_words:
+    - tomorrow
+    - today
+    - tonight
+    - now
+    - morning
+    - evening
+    - night
+    - afternoon
+    - midnight
+
+  # Known apps (for entity preservation)
+  apps:
+    - whatsapp
+    - camera
+    - youtube
+    - instagram
+    - gallery
+    - spotify
+    - maps
+    - gmail
+    - telegram
+    - netflix
+
+  # Known places
+  places:
+    - chennai
+    - coimbatore
+    - bangalore
+    - madurai
+    - office
+    - home
+    - college
+    - school
+    - hospital
+    - airport
+    - tirunelveli
+    - salem
+    - erode
+
+  # Device settings
+  device_targets:
+    - volume
+    - brightness
+    - wifi
+    - bluetooth
+    - torch
+    - flashlight
+    - hotspot
+    - data
+
+  # People references (Tanglish forms → English)
+  people:
+    mother: "mother"
+    father: "father"
+    amma:   "mother"
+    appa:   "father"
+    thambi: "brother"
+    akka:   "sister"
+    anna:   "brother"
+    friend: "friend"
+    sister: "sister"
+    brother: "brother"
+    wife:   "wife"
+    husband: "husband"
+
+logging:
+  level: "INFO"
+  log_file: "logs/ldm_normalization.log"

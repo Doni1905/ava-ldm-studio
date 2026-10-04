@@ -1,0 +1,86 @@
+# ============================================================
+# configs/audio.yaml
+# AVA LDM Studio — Audio Preprocessing Configuration
+# ============================================================
+# All preprocessing parameters in one place.
+# Read by src/audio/*.py and scripts/preprocess_audio.py.
+# ============================================================
+
+audio:
+  # Target sample rate expected by the ASR model (Whisper / wav2vec2)
+  target_sample_rate: 16000    # Hz
+
+  # Output format
+  output_format: "wav"         # wav only (soundfile PCM)
+  output_subtype: "PCM_16"     # 16-bit PCM — compact + universally compatible
+  output_channels: 1           # always mono
+
+  # Resampler — soxr is the primary engine (high quality, low memory)
+  resampler_engine: "soxr"     # soxr | scipy
+  soxr_quality: "HQ"           # VHQ | HQ | MQ | LQ | QQ
+
+validation:
+  # Hard limits — files outside these bounds are REJECTED
+  min_duration_s: 0.1          # seconds (below this = too short, likely corrupt)
+  max_duration_s: 60.0         # seconds (above this = suspiciously long)
+
+  # Soft limits — files outside these are flagged WARN but still processed
+  warn_min_duration_s: 0.5     # seconds
+  warn_max_duration_s: 30.0    # seconds
+
+  # Amplitude checks
+  min_peak_amplitude: 1.0e-6   # below this = silent / DC-only — REJECTED
+  max_peak_amplitude: 1.1      # above this = hard clipped — WARN
+
+  # Sample rate constraints
+  allowed_input_sample_rates:  # empty list = any rate accepted
+    []
+
+  # Channel constraints
+  max_input_channels: 8        # more than this = probably metadata error
+
+normalization:
+  # Strategy: peak | rms | none
+  strategy: "peak"
+
+  # Peak normalization target (dBFS)
+  peak_target_dbfs: -3.0       # leave 3 dB headroom
+
+  # RMS normalization target (dBFS)  — used when strategy = rms
+  rms_target_dbfs: -20.0
+
+  # Guard: if after normalization peak exceeds this, clip protect instead
+  clip_guard_dbfs: -0.1        # ~0.99 linear
+
+  # Silent file guard: don't normalize if RMS < this threshold (dBFS)
+  silence_threshold_dbfs: -60.0
+
+snr:
+  # SNR estimation using Voice Activity Detection (VAD) heuristic
+  # Divide audio into frames; frames above energy_threshold are "speech"
+  # SNR = 10*log10(speech_power / noise_floor_power)
+  enable: true
+  frame_length_ms: 25          # ms per frame
+  hop_length_ms: 10            # ms between frames
+  # Frames whose RMS is below this factor of the global RMS are "noise"
+  noise_floor_percentile: 10   # bottom 10% of frames = noise estimate
+
+paths:
+  output_dir: "data/processed_audio"
+  quality_log: "data/logs/audio_quality.csv"
+  log_dir: "logs"
+
+logging:
+  level: "INFO"
+  log_file: "logs/audio_preprocessing.log"
+  max_bytes: 10485760   # 10 MB
+  backup_count: 3
+
+processing:
+  # Number of parallel workers (1 = sequential, safe for low-RAM machines)
+  num_workers: 1
+  # Batch size for progress reporting
+  progress_every: 50
+  # Whether to skip already-processed files (resume-safe)
+  skip_existing: true
+

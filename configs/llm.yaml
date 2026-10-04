@@ -1,0 +1,71 @@
+# ============================================================
+# configs/llm.yaml
+# AVA LDM Studio — Local LLM Interface Configuration
+# ============================================================
+#
+# The LLM module receives normalized semantic output from the LDM
+# (not raw Tamil/Tanglish dialect speech).
+#
+# Architecture:
+#   LDM Output -> LLM Interface -> Selected Local Model
+# ============================================================
+
+model:
+  # Model identifier (Hugging Face ID or local directory)
+  # Recommended lightweight models for local testing:
+  #   - "Qwen/Qwen2.5-0.5B-Instruct"
+  #   - "HuggingFaceTB/SmolLM2-135M-Instruct"
+  #   - "mock" (for instant testing without downloading weights)
+  name: "mock"
+
+  # Optional path to local weights or GGUF file (overrides name if set)
+  path: null
+
+  # Replaceable backend:
+  #   "mock"         - In-memory mock generator (zero network/RAM overhead)
+  #   "transformers" - Hugging Face transformers pipeline/AutoModelForCausalLM
+  backend: "mock"
+
+  # Hardware acceleration: "cpu", "cuda", or "auto"
+  device: "cpu"
+
+  # Data type for weights: "float32", "float16", "bfloat16"
+  torch_dtype: "float32"
+
+  # Maximum sequence context length (input + output tokens)
+  max_context_length: 2048
+
+generation:
+  # Maximum new tokens to generate
+  max_new_tokens: 128
+
+  # Sampling temperature (0.0 = greedy / deterministic)
+  temperature: 0.7
+
+  # Nucleus sampling probability
+  top_p: 0.9
+
+  # Top-k candidate tokens
+  top_k: 50
+
+  # Penalty for repeating tokens
+  repetition_penalty: 1.1
+
+  # Whether to use sampling (set false for deterministic greedy search)
+  do_sample: true
+
+  # Enable streaming generation if supported by the backend
+  stream: false
+
+prompt:
+  # Base system persona
+  system_prompt: >-
+    You are AVA (Accentric Virtual Assistant), a helpful, concise assistant.
+    The user's query has been normalized from regional Tamil/Tanglish speech into standard English.
+    Respond accurately and concisely to help the user achieve their goal.
+
+  # Formatting template: "chat", "instruct", or "raw"
+  format: "chat"
+
+  # Whether to inject intent and extracted entities into the prompt context
+  include_metadata: true

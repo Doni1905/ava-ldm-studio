@@ -1,0 +1,29 @@
+# ============================================================
+# configs/asr.yaml
+# AVA LDM Studio — ASR Inference Configuration
+# ============================================================
+
+model:
+  # Hugging Face model ID (Whisper family by default)
+  # For CPU testing, 'openai/whisper-tiny' is recommended.
+  # For production Tamil, 'openai/whisper-small' or 'openai/whisper-medium' might be better.
+  model_id: "openai/whisper-tiny"
+  
+  # Generation parameters
+  language: "tamil"
+  task: "transcribe"
+  return_timestamps: true
+  
+inference:
+  # Hardware and Batching
+  device: "auto"        # "cuda", "cpu", or "auto"
+  batch_size: 4         # Adjust based on VRAM/RAM
+  
+  # Resilience
+  save_every: 10        # Save predictions incrementally every N samples
+  skip_existing: true   # Resume interrupted inference
+  
+paths:
+  predictions_csv: "results/asr/predictions.csv"
+  log_file: "logs/asr_inference.log"
+

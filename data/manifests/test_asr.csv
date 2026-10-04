@@ -1,0 +1,21 @@
+sample_id,file,verbatim,speaker_id,district,duration
+test_sample_0,data\test_audio\sample_0.mp3,reference text here,speaker_0,Chennai,5.0
+test_sample_1,data\test_audio\sample_1.mp3,reference text here,speaker_1,Chennai,5.0
+test_sample_2,data\test_audio\sample_2.mp3,reference text here,speaker_2,Chennai,5.0
+test_sample_3,data\test_audio\sample_3.mp3,reference text here,speaker_3,Chennai,5.0
+test_sample_4,data\test_audio\sample_4.mp3,reference text here,speaker_4,Chennai,5.0
+test_sample_5,data\test_audio\sample_5.mp3,reference text here,speaker_0,Chennai,5.0
+test_sample_6,data\test_audio\sample_6.mp3,reference text here,speaker_1,Chennai,5.0
+test_sample_7,data\test_audio\sample_7.mp3,reference text here,speaker_2,Chennai,5.0
+test_sample_8,data\test_audio\sample_8.mp3,reference text here,speaker_3,Chennai,5.0
+test_sample_9,data\test_audio\sample_9.mp3,reference text here,speaker_4,Chennai,5.0
+test_sample_10,data\test_audio\sample_10.mp3,reference text here,speaker_0,Chennai,5.0
+test_sample_11,data\test_audio\sample_11.mp3,reference text here,speaker_1,Chennai,5.0
+test_sample_12,data\test_audio\sample_12.mp3,reference text here,speaker_2,Chennai,5.0
+test_sample_13,data\test_audio\sample_13.mp3,reference text here,speaker_3,Chennai,5.0
+test_sample_14,data\test_audio\sample_14.mp3,reference text here,speaker_4,Chennai,5.0
+test_sample_15,data\test_audio\sample_15.mp3,reference text here,speaker_0,Chennai,5.0
+test_sample_16,data\test_audio\sample_16.mp3,reference text here,speaker_1,Chennai,5.0
+test_sample_17,data\test_audio\sample_17.mp3,reference text here,speaker_2,Chennai,5.0
+test_sample_18,data\test_audio\sample_18.mp3,reference text here,speaker_3,Chennai,5.0
+test_sample_19,data\test_audio\sample_19.mp3,reference text here,speaker_4,Chennai,5.0

@@ -1,0 +1,109 @@
+# ============================================================
+# configs/dataset.yaml
+# AVA LDM Studio — Dataset Configuration
+# ============================================================
+#
+# All scripts and modules read this single config.
+# Override any value via environment variable or CLI flag.
+# ============================================================
+
+dataset:
+  repo_id: "SPRINGLab/IndicVoices-R_Tamil"
+  repo_type: "dataset"
+  split: "train"
+  # 14 shards: train-00000-of-00014.parquet … train-00013-of-00014.parquet
+  num_shards: 14
+  total_examples: 39292
+
+  # Parquet shard glob pattern (relative to repo root)
+  shard_pattern: "data/train-{idx:05d}-of-00014.parquet"
+
+  # Required columns for the AVA working dataset.
+  # Audio bytes are NOT kept in the CSV manifest; only the HF path reference.
+  required_columns:
+    - audio          # audio object (path reference only in manifests)
+    - verbatim       # original spoken text
+    - normalized     # normalised reference text
+    - speaker_id     # unique speaker identifier
+    - district       # Tamil Nadu district
+    - scenario       # Extempore | Read
+    - task_name      # fine-grained task label
+    - gender         # Female | Male
+    - age_group      # 18-30 | 30-45 | 45-60 | 60+
+    - area           # Rural | Urban
+    - duration       # utterance duration (seconds)
+    - snr            # signal-to-noise ratio (dB)
+
+  # Columns to DROP after loading (everything not in required_columns)
+  # Listed explicitly so the intent is clear and auditable.
+  drop_columns:
+    - text
+    - lang
+    - samples
+    - job_type
+    - qualification
+    - state
+    - occupation
+    - utterance_pitch_mean
+    - utterance_pitch_std
+    - c50
+    - speaking_rate
+    - cer
+
+selection:
+  target_n: 5000          # total samples to select
+  random_seed: 42         # for reproducibility
+
+  # Stratification dimensions (in priority order)
+  strat_columns:
+    - speaker_id
+    - gender
+    - age_group
+    - area
+    - district
+    - scenario
+    - task_name
+
+  # Quality filters applied BEFORE stratification
+  filters:
+    min_duration: 1.0      # seconds
+    max_duration: 30.0     # seconds
+    min_snr: 5.0           # dB  — discard very noisy clips
+    require_verbatim: true # drop rows with empty verbatim
+    require_normalized: true
+
+splitting:
+  # Speaker-disjoint splits (no speaker appears in more than one split)
+  train_frac: 0.80
+  val_frac:   0.10
+  test_frac:  0.10
+  # Fractions must sum to 1.0
+
+  # Secondary goal: keep class balance within each split
+  stratify_splits_by:
+    - gender
+    - age_group
+    - area
+    - scenario
+
+paths:
+  cache_dir:     "data/cache"
+  shard_dir:     "data/cache/shards"
+  metadata_dir:  "data/cache/metadata"
+  manifest_dir:  "data/manifests"
+  log_dir:       "logs"
+
+  # Final manifest files (relative to project root)
+  selected_manifest: "data/manifests/selected_manifest.csv"
+  train_manifest:    "data/manifests/train.csv"
+  val_manifest:      "data/manifests/validation.csv"
+  test_manifest:     "data/manifests/test.csv"
+
+  # Resume checkpoint (JSON) — records which shards have been processed
+  checkpoint_file: "data/cache/metadata/checkpoint.json"
+
+logging:
+  level: "INFO"           # DEBUG | INFO | WARNING | ERROR
+  log_file: "logs/dataset_pipeline.log"
+  max_bytes: 10485760     # 10 MB
+  backup_count: 3
