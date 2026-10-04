@@ -33,7 +33,7 @@ Open http://127.0.0.1:5173. Text analysis also works in the browser when the Pyt
 ### Verified
 
 - Fresh `npm ci`, TypeScript check and production build pass; npm audit reports zero vulnerabilities in the tested lockfile. ESLint has zero errors and six nonblocking Fast Refresh warnings.
-- 449 Python tests pass, including malformed JSON and input-type regressions. Run `pytest tests`, since the cache directory contains standalone experimental scripts that are not the test suite.
+- 450 Python tests pass, including malformed JSON and input-type regressions. Run `pytest tests`, since the cache directory contains standalone experimental scripts that are not the test suite.
 - Playground, dataset, evaluation, pipeline and login web routes render. Wait for client hydration before inspecting them.
 - Text CLI and actual HTTP text analysis work. Text mode no longer downloads audio models unnecessarily.
 - Whisper loads and silence produces empty text, not a hallucinated command. Acoustic dialect detection requires a trained checkpoint; none is included. Without it, audio processing uses transcript-based lexical dialect markers with zero acoustic confidence instead of an untrained random classifier.
