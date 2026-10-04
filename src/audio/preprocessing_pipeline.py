@@ -67,7 +67,8 @@ from .validator import AudioValidator, ValidationResult
 
 # Force UTF-8 stdout
 if hasattr(sys.stdout, "buffer"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 logger = logging.getLogger(__name__)
 
@@ -495,4 +496,3 @@ def load_audio_config(config_path: str | Path | None = None) -> dict[str, Any]:
             config_path = Path("configs/audio.yaml")
     with open(config_path, encoding="utf-8") as fh:
         return yaml.safe_load(fh)
-
