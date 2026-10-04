@@ -119,9 +119,12 @@ class LdmPipeline:
     @property
     def dialect_clf(self):
         if self._dialect_clf is None:
-            from src.dialect.classifier import DialectClassifier
-            model = DialectClassifier(config=self._dialect_config, num_classes=self._registry.num_classes)
-            self._dialect_clf = DialectInferencePipeline(model=model, label_registry=self._registry, config=self._dialect_config)
+            checkpoint = Path(self._dialect_config.get("model", {}).get("best_checkpoint", "models/dialect/best_model.pt"))
+            if not checkpoint.is_absolute():
+                checkpoint = Path(__file__).resolve().parents[2] / checkpoint
+            if not checkpoint.exists():
+                raise RuntimeError("Trained dialect checkpoint is missing; use text lexical detection or train the classifier first")
+            self._dialect_clf = DialectInferencePipeline.from_checkpoint(checkpoint, self._dialect_config, self._registry)
         return self._dialect_clf
 
     def process(self, audio_path: str | Path) -> LdmPipelineOutput:
@@ -147,9 +150,17 @@ class LdmPipeline:
         
         # 4. Dialect Classification
         t0 = time.perf_counter()
-        dialect_res = self.dialect_clf.predict_file(str(audio_path))
-        dialect = dialect_res["dialect"]
-        dialect_conf = dialect_res["confidence"]
+        checkpoint = Path(self._dialect_config.get("model", {}).get("best_checkpoint", "models/dialect/best_model.pt"))
+        if not checkpoint.is_absolute():
+            checkpoint = Path(__file__).resolve().parents[2] / checkpoint
+        if checkpoint.exists():
+            dialect_res = self.dialect_clf.predict_file(str(audio_path))
+            dialect = dialect_res["dialect"]
+            dialect_conf = dialect_res["confidence"]
+        else:
+            from scripts.run_evaluation import detect_text_dialect
+            dialect = detect_text_dialect(transcript)
+            dialect_conf = 0.0  # Uncalibrated lexical fallback, not acoustic confidence.
         latencies["dialect_classification"] = (time.perf_counter() - t0) * 1000
         
         # 5. Linguistic Normalization
