@@ -105,4 +105,6 @@ function LoginScreen() {
       </div>
     </div>
   );
-      }
+}
+
+// End of component.
