@@ -68,8 +68,8 @@ export function DatasetExplorer() {
                 </h2>
               </div>
               <p className="mt-1 text-xs text-slate-400">
-                Sociolinguistically stratified Tamil speech corpus from SPRINGLab (IIT Madras / AI4Bharat)
-                paired with AVA's canonical dialect-normalization evaluation suite.
+                Sociolinguistically stratified Tamil speech corpus from SPRINGLab (IIT Madras /
+                AI4Bharat) paired with AVA's canonical dialect-normalization evaluation suite.
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -85,7 +85,9 @@ export function DatasetExplorer() {
             <div className="rounded-xl border border-slate-800 bg-slate-950 p-3.5">
               <div className="flex items-center gap-1.5 text-slate-500">
                 <FileSpreadsheet className="size-3.5" />
-                <span className="text-[10px] font-medium tracking-wider uppercase">Dataset Name</span>
+                <span className="text-[10px] font-medium tracking-wider uppercase">
+                  Dataset Name
+                </span>
               </div>
               <p className="mt-1 text-sm font-bold text-white">IndicVoices-R</p>
               <p className="mt-0.5 text-[10px] text-slate-500">Tamil ASR & Dialect Subset</p>
@@ -95,7 +97,9 @@ export function DatasetExplorer() {
             <div className="rounded-xl border border-slate-800 bg-slate-950 p-3.5">
               <div className="flex items-center gap-1.5 text-slate-500">
                 <Layers className="size-3.5" />
-                <span className="text-[10px] font-medium tracking-wider uppercase">Total Samples</span>
+                <span className="text-[10px] font-medium tracking-wider uppercase">
+                  Total Samples
+                </span>
               </div>
               <p className="mt-1 text-sm font-bold font-mono text-sky-400">5,030</p>
               <p className="mt-0.5 text-[10px] text-slate-500">5,000 audio + 30 test pairs</p>
@@ -125,7 +129,9 @@ export function DatasetExplorer() {
             <div className="rounded-xl border border-slate-800 bg-slate-950 p-3.5">
               <div className="flex items-center gap-1.5 text-slate-500">
                 <PieChart className="size-3.5" />
-                <span className="text-[10px] font-medium tracking-wider uppercase">Data Splits</span>
+                <span className="text-[10px] font-medium tracking-wider uppercase">
+                  Data Splits
+                </span>
               </div>
               <p className="mt-1 text-sm font-bold font-mono text-indigo-400">70 / 15 / 15 %</p>
               <p className="mt-0.5 text-[10px] text-slate-500">3,500 / 750 / 750</p>
@@ -202,27 +208,37 @@ export function DatasetExplorer() {
                   <tr>
                     <td className="py-2.5 font-semibold text-sky-400">Chennai</td>
                     <td className="py-2.5 text-slate-300">Chennai, Kanchipuram, Tiruvallur</td>
-                    <td className="py-2.5 text-center text-slate-400 text-[11px]">Madras Bashai, Tanglish slang</td>
+                    <td className="py-2.5 text-center text-slate-400 text-[11px]">
+                      Madras Bashai, Tanglish slang
+                    </td>
                   </tr>
                   <tr>
                     <td className="py-2.5 font-semibold text-sky-400">Kongu</td>
                     <td className="py-2.5 text-slate-300">Coimbatore, Erode, Salem, Tiruppur</td>
-                    <td className="py-2.5 text-center text-slate-400 text-[11px]">Honorific 'ayya', 'yov', 'la'</td>
+                    <td className="py-2.5 text-center text-slate-400 text-[11px]">
+                      Honorific 'ayya', 'yov', 'la'
+                    </td>
                   </tr>
                   <tr>
                     <td className="py-2.5 font-semibold text-sky-400">Madurai</td>
                     <td className="py-2.5 text-slate-300">Madurai, Dindigul, Theni</td>
-                    <td className="py-2.5 text-center text-slate-400 text-[11px]">Southern intonation, 'ennanga'</td>
+                    <td className="py-2.5 text-center text-slate-400 text-[11px]">
+                      Southern intonation, 'ennanga'
+                    </td>
                   </tr>
                   <tr>
                     <td className="py-2.5 font-semibold text-sky-400">Nellai</td>
                     <td className="py-2.5 text-slate-300">Tirunelveli, Thoothukudi, Kanyakumari</td>
-                    <td className="py-2.5 text-center text-slate-400 text-[11px]">Tirunelveli particles 'pa', 'ppa'</td>
+                    <td className="py-2.5 text-center text-slate-400 text-[11px]">
+                      Tirunelveli particles 'pa', 'ppa'
+                    </td>
                   </tr>
                   <tr>
                     <td className="py-2.5 font-semibold text-sky-400">Standard</td>
                     <td className="py-2.5 text-slate-300">Broadcast / Romanised Tamil</td>
-                    <td className="py-2.5 text-center text-slate-400 text-[11px]">Standard literary spoken Tamil</td>
+                    <td className="py-2.5 text-center text-slate-400 text-[11px]">
+                      Standard literary spoken Tamil
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -240,7 +256,8 @@ export function DatasetExplorer() {
                 Canonical Evaluation Utterances ({filteredItems.length} of {DATASET.length})
               </h3>
               <p className="mt-0.5 text-[11px] text-slate-500">
-                Ground-truth annotated speech pairs used for token F1 and intent accuracy benchmarks:
+                Ground-truth annotated speech pairs used for token F1 and intent accuracy
+                benchmarks:
               </p>
             </div>
 
@@ -315,7 +332,9 @@ export function DatasetExplorer() {
                     <td className="py-2.5 text-center">
                       <span
                         className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                          item.codeMix ? "bg-amber-950/30 text-amber-400" : "bg-slate-800/40 text-slate-400"
+                          item.codeMix
+                            ? "bg-amber-950/30 text-amber-400"
+                            : "bg-slate-800/40 text-slate-400"
                         }`}
                       >
                         {item.codeMix ? "Yes" : "No"}
