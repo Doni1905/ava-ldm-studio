@@ -1,3 +1,55 @@
+## Fork fixes and verified setup (October 4, 2026)
+
+This fork is https://github.com/Doni1905/ava-ldm-studio. The Python API is **aiohttp**, not FastAPI; `/docs` is not implemented. Use Python **3.11** and Node **22.12+**. The virtual environment is not included in Git.
+
+```bash
+git clone https://github.com/Doni1905/ava-ldm-studio.git
+cd ava-ldm-studio
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+# Linux CPU only. On macOS use: pip install torch==2.14.1 torchaudio==2.11.0
+pip install torch==2.14.1 torchaudio==2.11.0 --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements.txt
+pip install pytest
+python -m pytest tests -q
+npm ci
+npm run typecheck
+npm run lint
+npm run build
+```
+
+Run in two terminals:
+
+```bash
+# Terminal 1, with .venv active, from repository root
+python scripts/serve_api.py --host 127.0.0.1 --port 8000
+# Terminal 2, from repository root
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+Open http://127.0.0.1:5173. Text analysis also works in the browser when the Python API is stopped. The API binds to loopback by default; do not expose it publicly without authentication and tighter upload/path controls. This is a local research demo, not a production service.
+
+### Verified
+
+- Fresh `npm ci`, TypeScript check and production build pass; npm audit reports zero vulnerabilities in the tested lockfile. ESLint has zero errors and six nonblocking Fast Refresh warnings.
+- 449 Python tests pass, including malformed JSON and input-type regressions. Run `pytest tests`, since the cache directory contains standalone experimental scripts that are not the test suite.
+- Playground, dataset, evaluation, pipeline and login web routes render. Wait for client hydration before inspecting them.
+- Text CLI and actual HTTP text analysis work. Text mode no longer downloads audio models unnecessarily.
+- Whisper loads and silence produces empty text, not a hallucinated command. Acoustic dialect detection requires a trained checkpoint; none is included. Without it, audio processing uses transcript-based lexical dialect markers with zero acoustic confidence instead of an untrained random classifier.
+- Synthetic evaluation is reproducible. Its 53.33% end-to-end task success and 76.67% intent accuracy are limitations, not claims of production accuracy. Reported audio/LLM timings in this text benchmark are placeholders, not live speech measurements.
+
+### Not verified or not implemented
+
+- Android APK build and physical-device microphone behavior are not verified here. Android needs JDK 17, SDK/platform 35 and Android Studio or the SDK command-line tools. Use `cd android && bash gradlew testDebugUnitTest assembleDebug` if `./gradlew` lacks executable permission.
+- No trained dialect checkpoint, production dataset training, real Tamil/Tanglish speech accuracy validation or downstream LLM action execution is included in these fixes.
+- Browser Web Speech recognition may use a vendor's cloud service. It must not be described as guaranteed offline. Local Whisper weights are downloaded on first audio use, then can run from cache.
+- Demo login is client-side only, not a security boundary. LICENSE is empty upstream despite the README claiming MIT; clarify licensing with the upstream owner before redistribution.
+
+The historical research write-up below describes project goals and earlier examples. The verified setup and limitations above take precedence where they differ.
+
+---
+
 # AVA LDM Studio: Linguistic Dialect Model for Tamil & Tanglish
 
 > **Final Year Project (FYP) Research Documentation & Implementation**  
@@ -47,7 +99,7 @@ AVA enforces a strict linear separation of concerns:
 - **The LDM is NOT an execution engine**: The LDM does not toggle device settings, send SMS, or launch applications. It outputs validated linguistic understanding.
 - **The LDM is NOT a conversational chatbot**: The LDM does not hallucinate free-form dialogue; conversational interaction is delegated exclusively to the downstream Local LLM.
 - **Dual Implementation**:
-  - **Python Research Core (`src/`)**: High-throughput benchmarking, acoustic modeling (Wav2Vec2), evaluation metrics, and FastAPI service.
+  - **Python Research Core (`src/`)**: High-throughput benchmarking, acoustic modeling (Wav2Vec2), evaluation metrics, and aiohttp service.
   - **Native Android Prototype (`android/`)**: Zero-dependency Kotlin 2.0 + Jetpack Compose engine operating at sub-millisecond on-device latencies.
 
 Detailed architectural specifications and component data flows are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -74,13 +126,13 @@ Full dataset composition, splits, and acoustic guidelines are detailed in [docs/
 
 ### Prerequisites:
 - Python 3.10 or 3.11
-- Node.js 18+ and npm (for web research studio)
+- Node.js 22.12+ and npm (for web research studio)
 - Java JDK 17 or 21 (for Android Jetpack Compose module)
 - Git
 
 ### Clone the Repository:
 ```bash
-git clone https://github.com/example/ava-ldm-studio.git
+git clone https://github.com/Doni1905/ava-ldm-studio.git
 cd ava-ldm-studio
 ```
 
@@ -241,7 +293,7 @@ Additional endpoints:
 - `POST /normalize`: Morphological slang normalization.
 - `POST /evaluate`: Trigger benchmark evaluation suite.
 
-Interactive OpenAPI docs: `http://127.0.0.1:8000/docs`.
+No interactive OpenAPI `/docs` endpoint is implemented.
 
 ---
 
@@ -308,7 +360,7 @@ If you use this codebase or benchmark methodology in your research, please cite:
   title={AVA LDM Studio: A Linguistic Dialect Model for Regional Tamil Dialects and Code-Mixed Speech},
   author={AVA Research Team},
   year={2026},
-  howpublished={\url{https://github.com/example/ava-ldm-studio}},
+  howpublished={\url{https://github.com/Doni1905/ava-ldm-studio}},
   note={Final Year Project Research Repository}
 }
 ```
