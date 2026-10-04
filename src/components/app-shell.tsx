@@ -132,4 +132,6 @@ export function AppShell({
       </div>
     </div>
   );
-                      }
+}
+
+// End of component.
