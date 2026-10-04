@@ -62,6 +62,18 @@ class TestLDMAPI(test_utils.AioHTTPTestCase):
         self.service._pipeline = mock_pipeline
         return create_app(service=self.service)
 
+    async def test_invalid_input_types(self):
+        for endpoint in ("analyze", "normalize", "detect-language", "detect-dialect"):
+            for payload in ([1], {"text": 4}, {"text": None}, {"text": "   "}):
+                resp = await self.client.post("/" + endpoint, json=payload)
+                self.assertEqual(resp.status, 400, (endpoint, payload))
+                self.assertIn("error", await resp.json())
+
+    async def test_invalid_json(self):
+        resp = await self.client.post("/analyze", data="{broken", headers={"Content-Type": "application/json"})
+        self.assertEqual(resp.status, 400)
+        self.assertIn("error", await resp.json())
+
     async def test_health_check(self):
         resp = await self.client.get("/health")
         self.assertEqual(resp.status, 200)
