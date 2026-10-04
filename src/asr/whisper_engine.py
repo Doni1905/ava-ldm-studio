@@ -44,7 +44,7 @@ class WhisperEngine(ASREngine):
             model=self.model_id,
             device=self.device,
             # If PyTorch 2.0+ is used, torch_dtype can be float16 for CUDA, but stick to float32 for CPU for compatibility
-            torch_dtype=torch.float16 if "cuda" in self.device else torch.float32,
+            dtype=torch.float16 if "cuda" in self.device else torch.float32,
         )
         
         # Force generation config
@@ -72,6 +72,20 @@ class WhisperEngine(ASREngine):
         if not audio_arrays:
             return []
             
+        if len(audio_arrays) != len(sample_rates):
+            raise ValueError("Audio arrays and sample rates must have equal lengths")
+        if any(sr <= 0 for sr in sample_rates):
+            raise ValueError("Sample rates must be positive")
+        active = [i for i, arr in enumerate(audio_arrays) if arr.size and np.max(np.abs(arr)) > 1e-6]
+        if not active:
+            return [{"text": ""} for _ in audio_arrays]
+        if len(active) != len(audio_arrays):
+            results = [{"text": ""} for _ in audio_arrays]
+            outputs = self.transcribe_batch([audio_arrays[i] for i in active], [sample_rates[i] for i in active])
+            for i, output in zip(active, outputs):
+                results[i] = output
+            return results
+
         # The transformers pipeline expects inputs in the form of {"array": np.ndarray, "sampling_rate": int}
         # or just raw arrays if sampling_rate is handled, but dictionary is safer.
         inputs = []
@@ -93,4 +107,3 @@ class WhisperEngine(ASREngine):
             outputs = [outputs]
             
         return outputs
-
