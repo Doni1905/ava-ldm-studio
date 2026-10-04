@@ -41,7 +41,12 @@ export function EvaluationDashboard() {
         { name: "Standard", precision: 0.8889, recall: 1.0, f1: 0.9412, support: 16 },
       ],
     },
-    normalization: { token_f1: 0.8504, exact_match: 0.0667, bleu1: 0.7558, semantic_preservation: 0.9737 },
+    normalization: {
+      token_f1: 0.8504,
+      exact_match: 0.0667,
+      bleu1: 0.7558,
+      semantic_preservation: 0.9737,
+    },
     intent: { accuracy: 0.7667, entity_f1: 0.7541 },
     latency: {
       asr_ms: 12.5,
@@ -130,7 +135,8 @@ export function EvaluationDashboard() {
               <h2 className="text-base font-semibold text-white">Empirical Benchmark Summary</h2>
             </div>
             <p className="mt-1 text-xs text-slate-400">
-              Evaluated across 30 canonical dialect/code-mixed utterances and 20 ASR test audio samples. Strictly measured values.
+              Evaluated across 30 canonical dialect/code-mixed utterances and 20 ASR test audio
+              samples. Strictly measured values.
             </p>
           </div>
 
@@ -178,7 +184,9 @@ export function EvaluationDashboard() {
             <p className="mt-1 text-xl font-bold font-mono text-white">
               {(metrics.dialect.macro_f1 * 100).toFixed(1)}%
             </p>
-            <p className="mt-0.5 text-[10px] text-sky-300/80">Acc: {(metrics.dialect.accuracy * 100).toFixed(1)}% (5 Classes)</p>
+            <p className="mt-0.5 text-[10px] text-sky-300/80">
+              Acc: {(metrics.dialect.accuracy * 100).toFixed(1)}% (5 Classes)
+            </p>
           </div>
 
           {/* 4. Intent Accuracy */}
@@ -189,7 +197,9 @@ export function EvaluationDashboard() {
             <p className="mt-1 text-xl font-bold font-mono text-emerald-400">
               {(metrics.intent.accuracy * 100).toFixed(1)}%
             </p>
-            <p className="mt-0.5 text-[10px] text-slate-500">Entity F1: {(metrics.intent.entity_f1 * 100).toFixed(1)}%</p>
+            <p className="mt-0.5 text-[10px] text-slate-500">
+              Entity F1: {(metrics.intent.entity_f1 * 100).toFixed(1)}%
+            </p>
           </div>
 
           {/* 5. Normalization Accuracy */}
@@ -200,7 +210,9 @@ export function EvaluationDashboard() {
             <p className="mt-1 text-xl font-bold font-mono text-indigo-400">
               {(metrics.normalization.token_f1 * 100).toFixed(1)}%
             </p>
-            <p className="mt-0.5 text-[10px] text-slate-500">Sem. Pres: {(metrics.normalization.semantic_preservation * 100).toFixed(1)}%</p>
+            <p className="mt-0.5 text-[10px] text-slate-500">
+              Sem. Pres: {(metrics.normalization.semantic_preservation * 100).toFixed(1)}%
+            </p>
           </div>
 
           {/* 6. End-to-End Latency */}
@@ -211,7 +223,9 @@ export function EvaluationDashboard() {
             <p className="mt-1 text-xl font-bold font-mono text-emerald-300">
               {metrics.latency.total_ms.toFixed(1)} ms
             </p>
-            <p className="mt-0.5 text-[10px] text-slate-500">p95: {metrics.latency.p95_ms.toFixed(1)} ms</p>
+            <p className="mt-0.5 text-[10px] text-slate-500">
+              p95: {metrics.latency.p95_ms.toFixed(1)} ms
+            </p>
           </div>
         </div>
 
@@ -233,8 +247,12 @@ export function EvaluationDashboard() {
                   <th className="py-2.5 font-medium">Evaluation Metric</th>
                   <th className="py-2.5 font-medium text-center">Baseline A (No LDM)</th>
                   <th className="py-2.5 font-medium text-center">System B (Generic LDM)</th>
-                  <th className="py-2.5 font-medium text-center text-sky-400">System C (Dialect AVA)</th>
-                  <th className="py-2.5 font-medium text-center text-emerald-400">Net Improvement</th>
+                  <th className="py-2.5 font-medium text-center text-sky-400">
+                    System C (Dialect AVA)
+                  </th>
+                  <th className="py-2.5 font-medium text-center text-emerald-400">
+                    Net Improvement
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -243,8 +261,12 @@ export function EvaluationDashboard() {
                     <td className="py-3 font-medium text-slate-200">{row.metric}</td>
                     <td className="py-3 text-center font-mono text-slate-400">{row.baselineA}</td>
                     <td className="py-3 text-center font-mono text-slate-300">{row.systemB}</td>
-                    <td className="py-3 text-center font-mono font-semibold text-white bg-sky-950/20">{row.systemC}</td>
-                    <td className="py-3 text-center font-mono font-semibold text-emerald-400">{row.improvement}</td>
+                    <td className="py-3 text-center font-mono font-semibold text-white bg-sky-950/20">
+                      {row.systemC}
+                    </td>
+                    <td className="py-3 text-center font-mono font-semibold text-emerald-400">
+                      {row.improvement}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -309,15 +331,21 @@ export function EvaluationDashboard() {
               <div className="mt-3 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
                 <div className="rounded-xl border border-slate-800 bg-slate-950 p-2.5">
                   <span className="text-[10px] text-slate-500 uppercase">ASR Acoustic</span>
-                  <p className="mt-0.5 font-mono font-bold text-slate-200">{metrics.latency.asr_ms} ms</p>
+                  <p className="mt-0.5 font-mono font-bold text-slate-200">
+                    {metrics.latency.asr_ms} ms
+                  </p>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950 p-2.5">
                   <span className="text-[10px] text-slate-500 uppercase">LDM Pipeline</span>
-                  <p className="mt-0.5 font-mono font-bold text-sky-400">{metrics.latency.ldm_ms} ms</p>
+                  <p className="mt-0.5 font-mono font-bold text-sky-400">
+                    {metrics.latency.ldm_ms} ms
+                  </p>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950 p-2.5">
                   <span className="text-[10px] text-slate-500 uppercase">Local LLM</span>
-                  <p className="mt-0.5 font-mono font-bold text-indigo-400">{metrics.latency.llm_ms} ms</p>
+                  <p className="mt-0.5 font-mono font-bold text-indigo-400">
+                    {metrics.latency.llm_ms} ms
+                  </p>
                 </div>
               </div>
             </div>
@@ -330,13 +358,18 @@ export function EvaluationDashboard() {
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="size-4 shrink-0 text-emerald-400 mt-0.5" />
                   <span>
-                    <strong>Colloquial Robustness:</strong> Without LDM (Baseline A), colloquial discourse markers (<code className="text-sky-300">dei</code>, <code className="text-sky-300">machi</code>, <code className="text-sky-300">kudu</code>) trigger catastrophic failure in LLMs.
+                    <strong>Colloquial Robustness:</strong> Without LDM (Baseline A), colloquial
+                    discourse markers (<code className="text-sky-300">dei</code>,{" "}
+                    <code className="text-sky-300">machi</code>,{" "}
+                    <code className="text-sky-300">kudu</code>) trigger catastrophic failure in
+                    LLMs.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="size-4 shrink-0 text-emerald-400 mt-0.5" />
                   <span>
-                    <strong>Regional Adaptation:</strong> System C preserves entities with 97.4% accuracy across Madurai, Kongu, Nellai, and Chennai dialects.
+                    <strong>Regional Adaptation:</strong> System C preserves entities with 97.4%
+                    accuracy across Madurai, Kongu, Nellai, and Chennai dialects.
                   </span>
                 </li>
               </ul>
