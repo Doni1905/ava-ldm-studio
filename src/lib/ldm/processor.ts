@@ -91,7 +91,16 @@ const TIME_WORDS = ["tomorrow", "today", "tonight", "now", "morning", "evening",
 const APPS = ["whatsapp", "camera", "youtube", "instagram", "gallery", "spotify", "maps", "gmail"];
 const PLACES = ["chennai", "coimbatore", "bangalore", "madurai", "office", "home", "college"];
 const DEVICE_TARGETS = ["volume", "brightness", "wifi", "bluetooth", "torch", "flashlight"];
-const PEOPLE = ["mother", "father", "my brother", "my sister", "sister", "friend", "wife", "husband"];
+const PEOPLE = [
+  "mother",
+  "father",
+  "my brother",
+  "my sister",
+  "sister",
+  "friend",
+  "wife",
+  "husband",
+];
 
 const DIALECT_MARKERS: [string[], string][] = [
   [["dei", "machi", "bruh", "scene", "semma", "vaada"], "Chennai (Madras Bashai)"],
@@ -238,7 +247,9 @@ function extractEntities(gloss: string, raw: string): LdmEntity[] {
 
 function buildNormalized(intent: Intent, gloss: string, entities: LdmEntity[]): string {
   const words = gloss.split(" ").filter(Boolean);
-  const time = entities.filter((e) => e.type === "time" || e.type === "date_time").map((e) => e.value);
+  const time = entities
+    .filter((e) => e.type === "time" || e.type === "date_time")
+    .map((e) => e.value);
   const timePhrase = time.length ? ` ${time.reverse().join(" ")}` : "";
   const person = entities.find((e) => e.type === "person")?.value;
   const app = entities.find((e) => e.type === "app")?.value;
@@ -277,7 +288,11 @@ function buildNormalized(intent: Intent, gloss: string, entities: LdmEntity[]): 
       return `Show me directions to ${place || without(["directions", "route", "to"]) || "the destination"}.`;
     case "device_control": {
       const verb = words.find((w) => ["reduce", "increase", "turn off", "turn on"].includes(w));
-      const compound = /turn off/.test(gloss) ? "Turn off" : /turn on/.test(gloss) ? "Turn on" : null;
+      const compound = /turn off/.test(gloss)
+        ? "Turn off"
+        : /turn on/.test(gloss)
+          ? "Turn on"
+          : null;
       const action = compound ?? titleCase(verb ?? "adjust");
       return `${action} the ${setting ?? "setting"}${/some/.test(gloss) && !compound ? " a little" : ""}.`;
     }
@@ -292,8 +307,7 @@ function buildNormalized(intent: Intent, gloss: string, entities: LdmEntity[]): 
 
 export const ruleBasedLdm: LdmProcessor = {
   analyzeUtterance(input: string, userProfile?: UserProfile): LdmAnalysis {
-    const start =
-      typeof performance !== "undefined" ? performance.now() : Date.now();
+    const start = typeof performance !== "undefined" ? performance.now() : Date.now();
     const raw = input.trim();
     const trace: string[] = [];
 
@@ -333,11 +347,7 @@ export const ruleBasedLdm: LdmProcessor = {
       ["dei", "da", "machi", "bruh", "semma", "la", "pa", "ayya", "thala"].includes(t),
     );
     const polite = /please|pannunga|sollunga|kudunga/i.test(raw);
-    const style = slangHit
-      ? "Informal / slang"
-      : polite
-        ? "Polite / respectful"
-        : "Neutral";
+    const style = slangHit ? "Informal / slang" : polite ? "Polite / respectful" : "Neutral";
     trace.push(`style: ${style}`);
 
     let gloss = ` ${tokens.join(" ")} `;
