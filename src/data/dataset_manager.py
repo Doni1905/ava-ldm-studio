@@ -29,9 +29,11 @@ import sys as _sys
 
 # Force UTF-8 stdout/stderr so Unicode characters print on Windows without errors.
 if hasattr(_sys.stdout, "buffer"):
-    _sys.stdout = _io.TextIOWrapper(_sys.stdout.buffer, encoding="utf-8", errors="replace")
+    if hasattr(_sys.stdout, "reconfigure"):
+        _sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 if hasattr(_sys.stderr, "buffer"):
-    _sys.stderr = _io.TextIOWrapper(_sys.stderr.buffer, encoding="utf-8", errors="replace")
+    if hasattr(_sys.stderr, "reconfigure"):
+        _sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 import json
 import logging
