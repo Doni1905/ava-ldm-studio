@@ -1,0 +1,42 @@
+name: Sync reviewed v1.0.1 release source
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and apply reviewed release source
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib, io, pathlib, urllib.request, zipfile
+          url = "https://github.com/Doni1905/ava-ldm-studio/releases/download/android-v1.0.1/AVA-LDM-Studio-v1.0.1-source.zip"
+          data = urllib.request.urlopen(url).read()
+          assert hashlib.sha256(data).hexdigest() == "e57c1ce320a987b0805ea449ff2a2e73ebe1b85fa3b5946e5e628ffa72587e33", "Release source hash mismatch"
+          root = pathlib.Path.cwd()
+          prefix = "AVA-LDM-Studio-v1.0.1/"
+          with zipfile.ZipFile(io.BytesIO(data)) as z:
+              for name in z.namelist():
+                  assert name.startswith(prefix)
+                  relative = pathlib.PurePosixPath(name[len(prefix):])
+                  assert not relative.is_absolute() and ".." not in relative.parts
+                  target = root.joinpath(*relative.parts)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(z.read(name))
+          # The retired Compose screens are preserved under src/legacy in the ZIP.
+          old = root / "android/app/src/main/java/ai/ava/ldm/ui"
+          import shutil
+          for folder in ["components", "theme"]:
+              shutil.rmtree(old / folder)
+          (old / "LdmStudioScreen.kt").unlink()
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Sync reviewed Android v1.0.1 website and app source"
+            git push origin HEAD:main
+          fi
