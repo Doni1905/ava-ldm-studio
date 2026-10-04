@@ -34,8 +34,10 @@ function LoginScreen() {
   };
 
   const fill = (i: number) => {
-    setEmail(DEMO_USERS[i].email);
-    setPassword(DEMO_USERS[i].password);
+    const user = DEMO_USERS[i];
+    if (!user) return;
+    setEmail(user.email);
+    setPassword(user.password);
     setError(null);
   };
 
@@ -103,4 +105,4 @@ function LoginScreen() {
       </div>
     </div>
   );
-}
+      }
