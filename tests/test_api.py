@@ -62,6 +62,16 @@ class TestLDMAPI(test_utils.AioHTTPTestCase):
         self.service._pipeline = mock_pipeline
         return create_app(service=self.service)
 
+    def test_whisper_silence_and_input_validation(self):
+        import numpy as np
+        from src.asr.whisper_engine import WhisperEngine
+        engine = WhisperEngine.__new__(WhisperEngine)
+        self.assertEqual(engine.transcribe_batch([np.zeros(16000)], [16000]), [{"text": ""}])
+        with self.assertRaises(ValueError):
+            engine.transcribe_batch([np.zeros(1)], [])
+        with self.assertRaises(ValueError):
+            engine.transcribe_batch([np.zeros(1)], [0])
+
     async def test_invalid_input_types(self):
         for endpoint in ("analyze", "normalize", "detect-language", "detect-dialect"):
             for payload in ([1], {"text": 4}, {"text": None}, {"text": "   "}):
