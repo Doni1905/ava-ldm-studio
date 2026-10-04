@@ -220,9 +220,20 @@ class LDMRoutes:
         if not request.can_read_body:
             return {}
         try:
-            return await request.json()
+            data = await request.json()
         except Exception:
-            return {}
+            raise web.HTTPBadRequest(text=json.dumps({"error": "Invalid JSON body"}), content_type="application/json")
+        if not isinstance(data, dict):
+            raise web.HTTPBadRequest(text=json.dumps({"error": "JSON body must be an object"}), content_type="application/json")
+        for field in ("text", "dialect", "user_id", "audio_path", "output_dir"):
+            if field in data and data[field] is not None and not isinstance(data[field], str):
+                raise web.HTTPBadRequest(text=json.dumps({"error": f"Field '{field}' must be a string"}), content_type="application/json")
+        if "text" in data:
+            if data["text"] is None:
+                data["text"] = ""
+            else:
+                data["text"] = data["text"].strip()
+        return data
 
     @staticmethod
     async def _extract_audio_path(request: web.Request) -> Tuple[Optional[Path], Any]:
