@@ -70,7 +70,7 @@ class LdmPipeline:
         logger.info("Initializing LDM Master Pipeline...")
         t0 = time.perf_counter()
         
-        root = Path(project_root) if project_root else Path.cwd()
+        root = Path(project_root) if project_root else Path(__file__).resolve().parents[2]
         
         # Load configs
         import yaml
@@ -84,7 +84,8 @@ class LdmPipeline:
             dialect_cfg = yaml.safe_load(f)
             
         # 1. ASR
-        self.asr_engine = WhisperEngine(config=asr_cfg)
+        self._asr_config = asr_cfg
+        self._asr_engine = None
         
         # 2 & 3. Linguistic
         self.lang_detector = LanguageDetector.default()
@@ -92,8 +93,9 @@ class LdmPipeline:
         
         # 4. Dialect
         registry = DialectLabelRegistry(config=dialect_cfg)
-        model = DialectClassifier(config=dialect_cfg, num_classes=registry.num_classes)
-        self.dialect_clf = DialectInferencePipeline(model=model, label_registry=registry, config=dialect_cfg)
+        self._dialect_config = dialect_cfg
+        self._registry = registry
+        self._dialect_clf = None
         
         # 5. Normalization
         self.normalizer = LinguisticNormalizer.default()
@@ -107,6 +109,20 @@ class LdmPipeline:
         
         t1 = time.perf_counter()
         logger.info(f"Pipeline initialized in {(t1 - t0)*1000:.1f}ms")
+
+    @property
+    def asr_engine(self):
+        if self._asr_engine is None:
+            self._asr_engine = WhisperEngine(config=self._asr_config)
+        return self._asr_engine
+
+    @property
+    def dialect_clf(self):
+        if self._dialect_clf is None:
+            from src.dialect.classifier import DialectClassifier
+            model = DialectClassifier(config=self._dialect_config, num_classes=self._registry.num_classes)
+            self._dialect_clf = DialectInferencePipeline(model=model, label_registry=self._registry, config=self._dialect_config)
+        return self._dialect_clf
 
     def process(self, audio_path: str | Path) -> LdmPipelineOutput:
         """Process an audio file end-to-end to produce a structured intent."""
@@ -262,4 +278,3 @@ class LdmPipeline:
             confidence=confidences,
             latency_ms=latencies
         )
-
